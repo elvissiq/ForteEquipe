@@ -4,7 +4,7 @@
 Leitura do arquivo de Rateio
 @type function
 @author Elvis Siqueira
-@since 31/10/2023
+@since 28/11/2023
 /*/
 
 User Function FFIN001()
@@ -33,39 +33,72 @@ User Function FFIN001()
     
     Private oTabTMPCab
     Private oTabTMPGrid
-    Private aFieldsCab := {}
+    Private oTabTMPTit
+    Private aFieldsCab  := {}
     Private aFieldsGrid := {}
+    Private aFieldsTit  := {}
 
-    aAdd(aFieldsCab, {"CODFOR"  ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-    aAdd(aFieldsCab, {"LOJFOR"  ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-    aAdd(aFieldsCab, {"NOMFOR"  ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-    aAdd(aFieldsCab, {"PREFIXO" ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-    aAdd(aFieldsCab, {"NUMERO"  ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-    aAdd(aFieldsCab, {"PARCELA" ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-
+    aAdd(aFieldsCab, {"DTIMPOR" ,"D",8  ,0,"Data Importação",""})
+    aAdd(aFieldsCab, {"PERIODO" ,"C",40 ,0,"Período",""})
+    aAdd(aFieldsCab, {"ARQUIVO" ,"C",200,0,"Arquivo",""})
+    
     oTabTMPCab:= FWTemporaryTable():New(cAliasCab)
     oTabTMPCab:SetFields(aFieldsCab)
     oTabTMPCab:Create()
 
-	aAdd(aFieldsGrid, {"FILIAL" ,GetSx3Cache("CV4_FILIAL","X3_TIPO"),GetSx3Cache("CV4_FILIAL","X3_TAMANHO"),GetSx3Cache("CV4_FILIAL","X3_DECIMAL"),GetSx3Cache("CV4_FILIAL","X3_TITULO"),GetSx3Cache("CV4_FILIAL","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"SEQUEN" ,GetSx3Cache("CV4_SEQUEN","X3_TIPO"),GetSx3Cache("CV4_SEQUEN","X3_TAMANHO"),GetSx3Cache("CV4_SEQUEN","X3_DECIMAL"),GetSx3Cache("CV4_SEQUEN","X3_TITULO"),GetSx3Cache("CV4_SEQUEN","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"DTSEQ"  ,GetSx3Cache("CV4_DTSEQ" ,"X3_TIPO"),GetSx3Cache("CV4_DTSEQ" ,"X3_TAMANHO"),GetSx3Cache("CV4_DTSEQ" ,"X3_DECIMAL"),GetSx3Cache("CV4_DTSEQ" ,"X3_TITULO"),GetSx3Cache("CV4_DTSEQ" ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"DEBITO" ,GetSx3Cache("CV4_DEBITO","X3_TIPO"),GetSx3Cache("CV4_DEBITO","X3_TAMANHO"),GetSx3Cache("CV4_DEBITO","X3_DECIMAL"),GetSx3Cache("CV4_DEBITO","X3_TITULO"),GetSx3Cache("CV4_DEBITO","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"CREDIT" ,GetSx3Cache("CV4_CREDIT","X3_TIPO"),GetSx3Cache("CV4_CREDIT","X3_TAMANHO"),GetSx3Cache("CV4_CREDIT","X3_DECIMAL"),GetSx3Cache("CV4_CREDIT","X3_TITULO"),GetSx3Cache("CV4_CREDIT","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"PERCEN" ,GetSx3Cache("CV4_PERCEN","X3_TIPO"),GetSx3Cache("CV4_PERCEN","X3_TAMANHO"),GetSx3Cache("CV4_PERCEN","X3_DECIMAL"),GetSx3Cache("CV4_PERCEN","X3_TITULO"),GetSx3Cache("CV4_PERCEN","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"VALOR"  ,GetSx3Cache("CV4_VALOR" ,"X3_TIPO"),GetSx3Cache("CV4_VALOR" ,"X3_TAMANHO"),GetSx3Cache("CV4_VALOR" ,"X3_DECIMAL"),GetSx3Cache("CV4_VALOR" ,"X3_TITULO"),GetSx3Cache("CV4_VALOR" ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"HIST"   ,GetSx3Cache("CV4_HIST"  ,"X3_TIPO"),GetSx3Cache("CV4_HIST"  ,"X3_TAMANHO"),GetSx3Cache("CV4_HIST"  ,"X3_DECIMAL"),GetSx3Cache("CV4_HIST"  ,"X3_TITULO"),GetSx3Cache("CV4_HIST"  ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"CCC"    ,GetSx3Cache("CV4_CCC"   ,"X3_TIPO"),GetSx3Cache("CV4_CCC"   ,"X3_TAMANHO"),GetSx3Cache("CV4_CCC"   ,"X3_DECIMAL"),GetSx3Cache("CV4_CCC"   ,"X3_TITULO"),GetSx3Cache("CV4_CCC"   ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"CCD"    ,GetSx3Cache("CV4_CCD"   ,"X3_TIPO"),GetSx3Cache("CV4_CCD"   ,"X3_TAMANHO"),GetSx3Cache("CV4_CCD"   ,"X3_DECIMAL"),GetSx3Cache("CV4_CCD"   ,"X3_TITULO"),GetSx3Cache("CV4_CCD"   ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"ITEMD"  ,GetSx3Cache("CV4_ITEMD" ,"X3_TIPO"),GetSx3Cache("CV4_ITEMD" ,"X3_TAMANHO"),GetSx3Cache("CV4_ITEMD" ,"X3_DECIMAL"),GetSx3Cache("CV4_ITEMD" ,"X3_TITULO"),GetSx3Cache("CV4_ITEMD" ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"ITEMC"  ,GetSx3Cache("CV4_ITEMC" ,"X3_TIPO"),GetSx3Cache("CV4_ITEMC" ,"X3_TAMANHO"),GetSx3Cache("CV4_ITEMC" ,"X3_DECIMAL"),GetSx3Cache("CV4_ITEMC" ,"X3_TITULO"),GetSx3Cache("CV4_ITEMC" ,"X3_PICTURE")})
-    aAdd(aFieldsGrid, {"CLVLDB" ,GetSx3Cache("CV4_CLVLDB","X3_TIPO"),GetSx3Cache("CV4_CLVLDB","X3_TAMANHO"),GetSx3Cache("CV4_CLVLDB","X3_DECIMAL"),GetSx3Cache("CV4_CLVLDB","X3_TITULO"),GetSx3Cache("CV4_CLVLDB","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"CLVLDC" ,GetSx3Cache("CV4_CLVLDC","X3_TIPO"),GetSx3Cache("CV4_CLVLDC","X3_TAMANHO"),GetSx3Cache("CV4_CLVLDC","X3_DECIMAL"),GetSx3Cache("CV4_CLVLDC","X3_TITULO"),GetSx3Cache("CV4_CLVLDC","X3_PICTURE")})
-    aAdd(aFieldsGrid, {"ITSEQ"  ,GetSx3Cache("CV4_ITSEQ" ,"X3_TIPO"),GetSx3Cache("CV4_ITSEQ" ,"X3_TAMANHO"),GetSx3Cache("CV4_ITSEQ" ,"X3_DECIMAL"),GetSx3Cache("CV4_ITSEQ" ,"X3_TITULO"),GetSx3Cache("CV4_ITSEQ" ,"X3_PICTURE")})
-    
+	aAdd(aFieldsGrid, {"STATUS"  ,"C",10,0,"Status",""})
+    aAdd(aFieldsGrid, {"TPLANC"  ,"C",20,0,"Tipo de Lançamento",""})
+    aAdd(aFieldsGrid, {"DESCRIC" ,"C",40,0,"Descrição",""})
+    aAdd(aFieldsGrid, {"BANCO"   ,"C",20,0,"Banco",""})
+    aAdd(aFieldsGrid, {"AGENCIA" ,"C",7 ,0,"Agência",""})
+    aAdd(aFieldsGrid, {"GRAVAME" ,"C",3,0,"Gravame",""})
+    aAdd(aFieldsGrid, {"CNPJORI" ,"C",20,0,"CNPJ da instituição origem da negociação",""})
+    aAdd(aFieldsGrid, {"NOMEORI" ,"C",40,0,"Nome da instituição origem da negociação",""})
+    aAdd(aFieldsGrid, {"ESTABE"  ,"C",15,0,"Estabelecimento",""})
+    aAdd(aFieldsGrid, {"DTPAGAM" ,"D",8 ,0,"Data de pagamento",""})
+    aAdd(aFieldsGrid, {"DTLANCA" ,"D",8 ,0,"Data do lançamento",""})
+    aAdd(aFieldsGrid, {"DTAUTVE" ,"D",8 ,0,"Data da autorização da venda",""})
+    aAdd(aFieldsGrid, {"BANDEIR" ,"C",20,0,"Bandeira",""})
+    aAdd(aFieldsGrid, {"FORMPAG" ,"C",25,0,"Forma de Pagamento",""})
+    aAdd(aFieldsGrid, {"NPARCEL" ,"C",2 ,0,"Número da parcela",""})
+    aAdd(aFieldsGrid, {"QPARCEL" ,"C",2 ,0,"Quantidade de parcelas",""})
+    aAdd(aFieldsGrid, {"NCARTAO" ,"C",15,0,"Número do cartão",""})
+    aAdd(aFieldsGrid, {"CODTRAN" ,"C",25,0,"Código da transação",""})
+    aAdd(aFieldsGrid, {"TID"     ,"C",25,0,"TID",""})
+    aAdd(aFieldsGrid, {"CODAUTO" ,"C",10,0,"Código de autorização",""})
+    aAdd(aFieldsGrid, {"NSU"     ,"C",10,0,"NSU",""})
+    aAdd(aFieldsGrid, {"VALBRUT" ,"N",16,2,"Valor bruto","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"VALDESC" ,"N",16,2,"Valor descontado","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"VALLIQ"  ,"N",16,2,"Valor líquido","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"VALCOB"  ,"N",16,2,"Valor cobrado","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"VALPEND" ,"N",16,2,"Valor pendente","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"VALTOT"  ,"N",16,2,"Valor total","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"RECRAP"  ,"C",3 ,0,"Receba Rápido",""})
+    aAdd(aFieldsGrid, {"TPCAPT"  ,"C",20,0,"Tipo de captura",""})
+    aAdd(aFieldsGrid, {"RESOP"   ,"C",10,0,"Resumo da operação",""})
+    aAdd(aFieldsGrid, {"TAXA"    ,"N",16,2,"Taxas (%)","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"TARIFA"  ,"N",16,2,"Tarifa","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"CODVEND" ,"C",30,0,"Código da venda",""})
+    aAdd(aFieldsGrid, {"NUMMAQ"  ,"C",15,0,"Número da máquina",""})
+    aAdd(aFieldsGrid, {"PERCONS" ,"D",8 ,0,"Período considerado",""})
+    aAdd(aFieldsGrid, {"NUMOPER" ,"C",15,0,"Número da operação",""})
+    aAdd(aFieldsGrid, {"TAXAANT" ,"N",16,2,"Taxa de antecipação","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"TAXAEMB" ,"N",16,2,"Taxa de embarque","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"VALENTR" ,"N",16,2,"Valor da entrada","@E 9,999,999,999,999.99"})
+    aAdd(aFieldsGrid, {"NUMPEDI" ,"C",30,0,"Número do pedido",""})
+    aAdd(aFieldsGrid, {"NUMNOTA" ,"C",10,0,"Número da nota fiscal",""})
+    aAdd(aFieldsGrid, {"ID"      ,"C",20,0,"ID",""})
+    aAdd(aFieldsGrid, {"DTPGCIE" ,"D",8 ,0,"Data de pagamento na conta Cielo",""})
+
     oTabTMPGrid:= FWTemporaryTable():New(cAliasGrid)
     oTabTMPGrid:SetFields(aFieldsGrid)
     oTabTMPGrid:Create()
+
+
+
+
+
+
 
     cArq := tFileDialog( "Arquivo de planilha Excel (*.xlsx) | Todos tipos (*.*)",,,, .F., /*GETF_MULTISELECT*/)
     oExcel	:= YExcel():new(,cArq)
