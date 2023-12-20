@@ -10,10 +10,10 @@ Static __oRegiFIF := Nil
 Leitura do arquivo de Conciliação CIELO
 @type function
 @author Elvis Siqueira
-@since 04/12/2023
+@since 20/12/2023
 /*/
 User Function FFIN001()
-    Private oProcess := Nil 
+    Private oProcess := Nil
 
     oProcess := MsNewProcess():New({|| FIN1Proc()}, "Processando arquivo...", "Aguarde...", .T.)
     oProcess:Activate()
