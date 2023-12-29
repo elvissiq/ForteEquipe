@@ -109,9 +109,18 @@ Static Function FIN1Proc()
     oTabTMPGrid:Create()
 
     cArq := tFileDialog( "Arquivo de planilha Excel (*.xlsx)",,,, .F., /*GETF_MULTISELECT*/)
-    oExcel	:= YExcel():new(,cArq)
 
     If !Empty(cArq)
+
+        If SubSTR(cArq,RAT(".",cArq)) <> '.xlsx'
+            FWAlertWarning('O arquivo não está no formato "xlsx".','Tipo do Arquivo')
+            oTabTMPCab:Delete()
+            oTabTMPGrid:Delete()
+            FWRestArea(aArea)
+            Return
+        EndIF 
+        
+        oExcel	:= YExcel():new(,cArq)
         
         If F914aExis(cArq)
             MsgStop("O arquivo: "+Alltrim(cArq)+", já foi importado anteriormente.")
@@ -194,10 +203,10 @@ Static Function FIN1Proc()
         Next
 
         FWExecView("","FFIN001",MODEL_OPERATION_UPDATE,,{|| .T.},,,aButtons)
+        
+        oExcel:Close() 
 
     EndIF 
-
-    oExcel:Close() 
 
     oTabTMPCab:Delete()
     oTabTMPGrid:Delete()
@@ -437,8 +446,13 @@ Static Function fSave(oModel)
     Local nTamNSUTEF := TamSx3("FIF_NSUTEF")[1]
     Local nTamPARCEL := TamSx3("FIF_PARCEL")[1]
     Local cTPVenda   := ""
+    Local lGrvFIF    := .T.
     Local nY 
     
+    DBSelectArea("FVR")
+    DBSelectArea("FV3")
+    DBSelectArea("FIF")
+
     For nY := 1 To oModelGrid:Length()
         oModelGrid:GoLine(nY)
         
@@ -454,6 +468,12 @@ Static Function fSave(oModel)
             If !Empty(cTPVenda) .AND. Alltrim(oModelGrid:GetValue("STATUS")) == "Pago"
                 
                 cSeqFIF := proxIdFIF()
+
+                If FVR->(MSSeek(FWxFilial("FVR")+Pad(cSeqFIF,FwTamSX3("FVR_IDPROC")[1])))
+                    RecLock('FVR',.F.)
+                        DbDelete()
+                    FVR->(MsUnlock())
+                EndIF
 
                 RecLock('FVR',.T.)
                     FVR_FILIAL := FWxFilial("FVR") 
@@ -475,6 +495,12 @@ Static Function fSave(oModel)
                     FVR_MODPAG := ""
                 FVR->(MsUnlock())
 
+                If FV3->(MSSeek(FWxFilial("FV3")+Pad(cSeqFIF,FwTamSX3("FV3_IDPROC")[1])+Pad(AsString(nY),FwTamSX3("FV3_LINARQ")[1])))
+                    RecLock('FV3',.F.)
+                        DbDelete()
+                    FV3->(MsUnlock())
+                EndIF
+
                 RecLock('FV3',.T.)
                     FV3->FV3_FILIAL := FWxFilial("FV3") 
                     FV3->FV3_IDPROC := cSeqFIF
@@ -486,71 +512,84 @@ Static Function fSave(oModel)
                     FV3->FV3_NUCOMP := ""
                     FV3->FV3_MOTIVO := ""
                 FV3->(MsUnlock())
+                
+                lGrvFIF := .T.
 
-                RecLock('FIF',.T.)
-                    FIF->FIF_FILIAL := FWxFilial("FIF") 
-                    FIF->FIF_TPREG  := "10"
-                    FIF->FIF_INTRAN := ""
-                    FIF->FIF_CODEST := oModelGrid:GetValue("NUMMAQ")
-                    FIF->FIF_DTTEF  := oModelGrid:GetValue("DTAUTVE")
-                    FIF->FIF_NURESU := oModelGrid:GetValue("RESOP")
-                    FIF->FIF_NUCOMP := PadL(oModelGrid:GetValue("RESOP"), nTamNUCOMP, '0')
-                    FIF->FIF_NSUTEF := PadL(oModelGrid:GetValue("NSU"), nTamNSUTEF, '0')
-                    FIF->FIF_NUCART := oModelGrid:GetValue("NCARTAO")
-                    FIF->FIF_VLBRUT := oModelGrid:GetValue("VALBRUT")
-                    FIF->FIF_TOTPAR := oModelGrid:GetValue("QPARCEL")
-                    FIF->FIF_VLLIQ  := oModelGrid:GetValue("VALLIQ")
-                    FIF->FIF_DTCRED := oModelGrid:GetValue("DTLANCA")
-                    FIF->FIF_PARCEL := PadL(oModelGrid:GetValue("NPARCEL"), nTamPARCEL, '0')
-                    FIF->FIF_TPPROD := IIF(oModelGrid:GetValue("NPARCEL") == "Venda débito","D","C")
-                    FIF->FIF_CAPTUR := "1"
-                    FIF->FIF_CODRED := "340"
-                    FIF->FIF_CODBCO := "341"
-                    FIF->FIF_CODAGE := SubSTR(oModelGrid:GetValue("AGENCIA"),1,RAT("-",oModelGrid:GetValue("AGENCIA"))-1)
-                    FIF->FIF_NUMCC  := SubSTR(oModelGrid:GetValue("CONTA"),1,RAT("-",oModelGrid:GetValue("CONTA"))-1)
-                    FIF->FIF_VLCOM  := oModelGrid:GetValue("VALDESC")
-                    FIF->FIF_TXSERV := oModelGrid:GetValue("TAXA")
-                    FIF->FIF_CODLOJ := oModelGrid:GetValue("ESTABE")
-                    FIF->FIF_CODAUT := oModelGrid:GetValue("CODAUTO")
-                    FIF->FIF_CUPOM  := oModelGrid:GetValue("NUMNOTA")
-                    FIF->FIF_SEQREG := PadL(oModelGrid:GetLine(), 6, '0')
-                    FIF->FIF_DTAJST := STOD("")
-                    FIF->FIF_CODMAJ := ""
-                    FIF->FIF_STATUS := "1"
-                    FIF->FIF_DTBAIX := STOD("")
-                    FIF->FIF_DTIMP  := dDataBase
-                    FIF->FIF_USERGA := ""
-                    FIF->FIF_MSIMP  := DTOS(dDataBase)
-                    FIF->FIF_PREFIX := ""
-                    FIF->FIF_NUM    := ""
-                    FIF->FIF_PARC   := ""
-                    FIF->FIF_TIPO   := ""
-                    FIF->FIF_PARALF := RetAsc(oModelGrid:GetValue("NPARCEL"),2,.T.)
-                    FIF->FIF_CODFIL := FWxFilial("FIF")
-                    FIF->FIF_CODBAN := "" //Posicione("MDE",2,FWxFilial("MDE")+Pad(UPPER(oModelGrid:GetValue("BANDEIR"))),"MDE_CODIGO")
-                    FIF->FIF_SEQFIF := cSeqFIF
-                    FIF->FIF_DTANT  := STOD("")
-                    FIF->FIF_STVEND := ""
-                    FIF->FIF_DTCONV := STOD("")
-                    FIF->FIF_CODJUS := ""
-                    FIF->FIF_DESJUS := ""
-                    FIF->FIF_DESJUT := ""
-                    FIF->FIF_CODADM := ""
-                    FIF->FIF_DTVEN  := STOD("")
-                    FIF->FIF_DTPAG  := STOD("")
-                    FIF->FIF_USUVEN := ""
-                    FIF->FIF_USUPAG := ""
-                    FIF->FIF_ARQVEN := ""
-                    FIF->FIF_PGJUST := ""
-                    FIF->FIF_PGDES1 := ""
-                    FIF->FIF_ARQPAG := oModelCab:GetValue("ARQUIVO")
-                    FIF->FIF_NSUARQ := ""
-                    FIF->FIF_PGDES2 := ""
-                    FIF->FIF_IDORAJ := ""
-                    FIF->FIF_MSFIL  := FWxFilial("FIF")
-                    FIF->FIF_MODPAG := ""
-                FIF->(MsUnlock())
-            
+                If FIF->(MSSeek(FWxFilial("FIF")+PadL(oModelGrid:GetValue("NSU"), nTamNSUTEF, '0')+PadL(oModelGrid:GetValue("NPARCEL"), nTamPARCEL, '0')))
+                    If Empty(FIF->FIF_NUM)
+                        RecLock('FIF',.F.)
+                            DbDelete()
+                        FIF->(MsUnlock())
+                    Else 
+                        lGrvFIF := .F.
+                    EndIF 
+                EndIF 
+
+                If lGrvFIF 
+                    RecLock('FIF',.T.)
+                        FIF->FIF_FILIAL := FWxFilial("FIF") 
+                        FIF->FIF_TPREG  := "10"
+                        FIF->FIF_INTRAN := ""
+                        FIF->FIF_CODEST := oModelGrid:GetValue("NUMMAQ")
+                        FIF->FIF_DTTEF  := oModelGrid:GetValue("DTAUTVE")
+                        FIF->FIF_NURESU := oModelGrid:GetValue("RESOP")
+                        FIF->FIF_NUCOMP := PadL(oModelGrid:GetValue("RESOP"), nTamNUCOMP, '0')
+                        FIF->FIF_NSUTEF := PadL(oModelGrid:GetValue("NSU"), nTamNSUTEF, '0')
+                        FIF->FIF_NUCART := oModelGrid:GetValue("NCARTAO")
+                        FIF->FIF_VLBRUT := oModelGrid:GetValue("VALBRUT")
+                        FIF->FIF_TOTPAR := oModelGrid:GetValue("QPARCEL")
+                        FIF->FIF_VLLIQ  := oModelGrid:GetValue("VALLIQ")
+                        FIF->FIF_DTCRED := oModelGrid:GetValue("DTLANCA")
+                        FIF->FIF_PARCEL := PadL(oModelGrid:GetValue("NPARCEL"), nTamPARCEL, '0')
+                        FIF->FIF_TPPROD := IIF(oModelGrid:GetValue("NPARCEL") == "Venda débito","D","C")
+                        FIF->FIF_CAPTUR := "1"
+                        FIF->FIF_CODRED := "340"
+                        FIF->FIF_CODBCO := "341"
+                        FIF->FIF_CODAGE := SubSTR(oModelGrid:GetValue("AGENCIA"),1,RAT("-",oModelGrid:GetValue("AGENCIA"))-1)
+                        FIF->FIF_NUMCC  := SubSTR(oModelGrid:GetValue("CONTA"),1,RAT("-",oModelGrid:GetValue("CONTA"))-1)
+                        FIF->FIF_VLCOM  := oModelGrid:GetValue("VALDESC")
+                        FIF->FIF_TXSERV := oModelGrid:GetValue("TAXA")
+                        FIF->FIF_CODLOJ := oModelGrid:GetValue("ESTABE")
+                        FIF->FIF_CODAUT := oModelGrid:GetValue("CODAUTO")
+                        FIF->FIF_CUPOM  := oModelGrid:GetValue("NUMNOTA")
+                        FIF->FIF_SEQREG := PadL(oModelGrid:GetLine(), 6, '0')
+                        FIF->FIF_DTAJST := STOD("")
+                        FIF->FIF_CODMAJ := ""
+                        FIF->FIF_STATUS := "1"
+                        FIF->FIF_DTBAIX := STOD("")
+                        FIF->FIF_DTIMP  := dDataBase
+                        FIF->FIF_USERGA := ""
+                        FIF->FIF_MSIMP  := DTOS(dDataBase)
+                        FIF->FIF_PREFIX := ""
+                        FIF->FIF_NUM    := ""
+                        FIF->FIF_PARC   := ""
+                        FIF->FIF_TIPO   := ""
+                        FIF->FIF_PARALF := RetAsc(oModelGrid:GetValue("NPARCEL"),2,.T.)
+                        FIF->FIF_CODFIL := FWxFilial("FIF")
+                        FIF->FIF_CODBAN := "" //Posicione("MDE",2,FWxFilial("MDE")+Pad(UPPER(oModelGrid:GetValue("BANDEIR"))),"MDE_CODIGO")
+                        FIF->FIF_SEQFIF := cSeqFIF
+                        FIF->FIF_DTANT  := STOD("")
+                        FIF->FIF_STVEND := ""
+                        FIF->FIF_DTCONV := STOD("")
+                        FIF->FIF_CODJUS := ""
+                        FIF->FIF_DESJUS := ""
+                        FIF->FIF_DESJUT := ""
+                        FIF->FIF_CODADM := ""
+                        FIF->FIF_DTVEN  := STOD("")
+                        FIF->FIF_DTPAG  := STOD("")
+                        FIF->FIF_USUVEN := ""
+                        FIF->FIF_USUPAG := ""
+                        FIF->FIF_ARQVEN := ""
+                        FIF->FIF_PGJUST := ""
+                        FIF->FIF_PGDES1 := ""
+                        FIF->FIF_ARQPAG := oModelCab:GetValue("ARQUIVO")
+                        FIF->FIF_NSUARQ := ""
+                        FIF->FIF_PGDES2 := ""
+                        FIF->FIF_IDORAJ := ""
+                        FIF->FIF_MSFIL  := FWxFilial("FIF")
+                        FIF->FIF_MODPAG := ""
+                    FIF->(MsUnlock())
+                EndIf
             EndIF 
 
         EndIf 
