@@ -7,13 +7,7 @@
 //--------------------------------------------------------------------------------------------------------------------------------------------
  
 User Function F150QTDT()
-    Local cNomArq := MV_PAR04
-
-    If IsSrvUnix()
-        cNomArq := Alltrim(SubSTR(MV_PAR04,Rat("/",MV_PAR04)+1))
-    Else
-        cNomArq := Alltrim(SubSTR(MV_PAR04,Rat("\",MV_PAR04)+1))
-    EndIF
+    Local cNomArq := Alltrim(SubSTR(MV_PAR04,Rat("\",MV_PAR04)+1))
 
     U_FFIN002(cNomArq) //Tela de Log do arquivo de Retorno CNAB
     
