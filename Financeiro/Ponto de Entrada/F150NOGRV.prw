@@ -12,13 +12,7 @@
 User Function F150NOGRV()
     Local lRet    := .T.
     Local lInclui := .T.
-    Local cNomArq := MV_PAR04
-
-    If IsSrvUnix()
-        cNomArq := Alltrim(SubSTR(MV_PAR04,Rat("/",MV_PAR04)+1))
-    Else
-        cNomArq := Alltrim(SubSTR(MV_PAR04,Rat("\",MV_PAR04)+1))
-    EndIF
+    Local cNomArq := Alltrim(SubSTR(MV_PAR04,Rat("\",MV_PAR04)+1))
 
     //Grava o LOG do arquivo na tabela Customizada para abrir em tela posteriormente
     IF ExisteSX2("ZZ1")
@@ -47,8 +41,8 @@ User Function F150NOGRV()
             ZZ1->ZZ1_DCRED  := SE1->E1_VENCREA
             ZZ1->ZZ1_OCORR  := ""
             ZZ1->ZZ1_MOTBAN := ""
-            ZZ1->ZZ1_LINHA  := AllToChar(nSeq+2, "", .F.)
-            ZZ1->ZZ1_LINARQ := cBuffWrite
+            ZZ1->ZZ1_LINHA  := Alltrim(AllToChar(nSeq+2, "", .F.))
+            ZZ1->ZZ1_LINARQ := xBuffer
             ZZ1->ZZ1_DVENC  := SE1->E1_VENCREA
             ZZ1->ZZ1_BANCO  := MV_PAR05
             ZZ1->ZZ1_AGENCI := MV_PAR06
