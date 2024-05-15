@@ -63,6 +63,7 @@ Static Function ModelDef()
 
 	  oModel:SetPrimaryKey({})
 
+    oModel:AddCalc( 'FFIN002CALC',  'ZZ1MASTER', 'ZZ1GRID', 'ZZ1_NUMTIT' , 'ZZ1__NUMTIT', 'COUNT', { || .T. },,'Qtd. Titulos' )
     oModel:AddCalc( 'FFIN002CALC',  'ZZ1MASTER', 'ZZ1GRID', 'ZZ1_VLDESP' , 'ZZ1__VLDESP', 'SUM'  , { || .T. },,'Despesas' )
     oModel:AddCalc( 'FFIN002CALC',  'ZZ1MASTER', 'ZZ1GRID', 'ZZ1_VLDESC' , 'ZZ1__VLDESC', 'SUM'  , { || .T. },,'Descontos' )
     oModel:AddCalc( 'FFIN002CALC',  'ZZ1MASTER', 'ZZ1GRID', 'ZZ1_VLABAT' , 'ZZ1__VLABAT', 'SUM'  , { || .T. },,'Abatimentos' )
@@ -201,6 +202,7 @@ Static Function fMontaRel()
     Local oModelGrid := oModel:GetModel("ZZ1GRID")
     Local cNomeRel   := FunName()+"_"+FWTimeStamp(1,dDataBase,Time())
     Local cPictVal   := GetSx3Cache("E1_VALOR","X3_PICTURE")
+    Local nTotTit    := 0
     Local nTotDesp   := 0
     Local nTotDesc   := 0
     Local nTotAbat   := 0
@@ -268,6 +270,7 @@ Static Function fMontaRel()
         oPrintRel:SayAlign(nLinAtu, nPosCred, AllTrim(AllToChar(oModelGrid:GetValue("ZZ1_VLCRED"),cPictVal, .F.))   , oFontDet, 100, 07, , nPadLeft,)
         oPrintRel:SayAlign(nLinAtu, nPosDCre, DToC(oModelGrid:GetValue("ZZ1_DCRED "))                               , oFontDet, 100, 07, , nPadLeft,)
 
+        nTotTit++
         nTotDesp += oModelGrid:GetValue("ZZ1_VLDESP")
         nTotDesc += oModelGrid:GetValue("ZZ1_VLDESC")
         nTotAbat += oModelGrid:GetValue("ZZ1_VLABAT")
@@ -285,6 +288,7 @@ Static Function fMontaRel()
 	    ElseIf nY == oModelGrid:Length()
             nLinAtu += 10
 
+            oPrintRel:SayAlign(nLinAtu, nPosDTBX, "Qtd. Titulos: " + cValToChar(nTotTit)      , oFontDetN, 100, 07, , nPadLeft,)
             oPrintRel:SayAlign(nLinAtu, nPosDTBX, "Totais: "                                  , oFontDetN, 100, 07, , nPadLeft,)
             oPrintRel:SayAlign(nLinAtu, nPosDesp, AllTrim(AllToChar(nTotDesp,cPictVal, .F.))  , oFontDetN, 100, 07, , nPadLeft,)
             oPrintRel:SayAlign(nLinAtu, nPosDesc, AllTrim(AllToChar(nTotDesc,cPictVal, .F.))  , oFontDetN, 100, 07, , nPadLeft,)
