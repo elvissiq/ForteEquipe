@@ -19,8 +19,7 @@ User Function F150NOGRV()
         
         DBselectArea("ZZ1")
         If ZZ1->(MSSeek(xFilial("ZZ1")+Pad(cNomArq,FWTamSX3("ZZ1_ARQUIV")[1])+;
-                                       Pad(SE1->E1_NUM,FWTamSX3("ZZ1_NUMTIT")[1])+;
-                                       Pad(SE1->E1_IDCNAB,FWTamSX3("ZZ1_NSNUM")[1])))
+                                       Pad(SE1->E1_NUM,FWTamSX3("ZZ1_NUMTIT")[1])))
             lInclui := .F. //Alteração
         EndIf 
 
