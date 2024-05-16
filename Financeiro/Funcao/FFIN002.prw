@@ -108,8 +108,6 @@ Static Function ViewDef()
     oView:SetOwnerView('VIEW_GRID'  ,'GRID')
     oView:SetOwnerView('VIEW_CALC'  ,'CALC')
 
-    //oView:SetAfterViewActivate({|oView| ViewActv(oView)})
-
     oView:AddUserButton( 'Imprimir', 'MAGIC_BMP',;
                             {|| U_FFINR002() },;
                             /*cToolTip  | Comentário do botão*/,;
@@ -119,66 +117,6 @@ Static Function ViewDef()
 
 Return oView
 
-/*-----------------------------------------------------------------------*
- | Func:  ViewActv                                                       |
- | Desc:  Chamada na inicialização da View para preenchimento dos campos |
- | Obs.:  /                                                              |
- *----------------------------------------------------------------------*/
-Static Function ViewActv(oView)
-    Local oModel := FWModelActive() 
-    Local oModelMaster := oModel:GetModel("ZZ1MASTER")
-    Local oModelGrid := oModel:GetModel("ZZ1GRID")
-    Local nLin := 1
-
-    DBSelectArea('ZZ1')
-    ZZ1->(DBGoTop())
-    ZZ1->(MSSeek(xFilial('ZZ1')+Pad(cArquivo,FWTamSX3("ZZ1_ARQUIV")[1])))
-
-    oModelMaster:LoadValue("ZZ1_ARQUIV", ZZ1->ZZ1_ARQUIV)
-    oModelMaster:LoadValue("ZZ1_BANCO" , ZZ1->ZZ1_BANCO )
-    oModelMaster:LoadValue("ZZ1_AGENCI", ZZ1->ZZ1_AGENCI)
-    oModelMaster:LoadValue("ZZ1_NUMCOM", ZZ1->ZZ1_NUMCOM)
-
-    oView:Refresh("VIEW_MASTER")
-
-    While ZZ1->(!Eof()) .AND. Alltrim(ZZ1->ZZ1_ARQUIV) == cArquivo
-
-        nLin++
-
-        oModelGrid:AddLine()
-
-        oModelGrid:LoadValue("ZZ1_NUMTIT", ZZ1->ZZ1_NUMTIT)
-        oModelGrid:LoadValue("ZZ1_DBAIXA", ZZ1->ZZ1_DBAIXA)
-        oModelGrid:LoadValue("ZZ1_TIPO"  , ZZ1->ZZ1_TIPO  )
-        oModelGrid:LoadValue("ZZ1_NSNUM" , ZZ1->ZZ1_NSNUM )
-        oModelGrid:LoadValue("ZZ1_VLDESP", ZZ1->ZZ1_VLDESP)
-        oModelGrid:LoadValue("ZZ1_VLDESC", ZZ1->ZZ1_VLDESC)
-        oModelGrid:LoadValue("ZZ1_VLABAT", ZZ1->ZZ1_VLABAT)
-        oModelGrid:LoadValue("ZZ1_VLREC" , ZZ1->ZZ1_VLREC )
-        oModelGrid:LoadValue("ZZ1_JUROS" , ZZ1->ZZ1_JUROS )
-        oModelGrid:LoadValue("ZZ1_MULTA" , ZZ1->ZZ1_MULTA )
-        oModelGrid:LoadValue("ZZ1_OUTDES", ZZ1->ZZ1_OUTDES)
-        oModelGrid:LoadValue("ZZ1_VLCRED", ZZ1->ZZ1_VLCRED)
-        oModelGrid:LoadValue("ZZ1_DCRED" , ZZ1->ZZ1_DCRED )
-        oModelGrid:LoadValue("ZZ1_OCORR" , ZZ1->ZZ1_OCORR )
-        oModelGrid:LoadValue("ZZ1_MOTBAN", ZZ1->ZZ1_MOTBAN)
-        oModelGrid:LoadValue("ZZ1_LINHA" , AllToChar(nLin))
-        oModelGrid:LoadValue("ZZ1_LINARQ", ZZ1->ZZ1_LINARQ)
-        oModelGrid:LoadValue("ZZ1_DVENC" , ZZ1->ZZ1_DVENC )
-        oModelGrid:LoadValue("ZZ1_BANCO" , ZZ1->ZZ1_BANCO )
-        oModelGrid:LoadValue("ZZ1_AGENCI", ZZ1->ZZ1_AGENCI)
-        oModelGrid:LoadValue("ZZ1_NUMCOM", ZZ1->ZZ1_NUMCOM)
-        oModelGrid:LoadValue("ZZ1_ARQUIV", ZZ1->ZZ1_ARQUIV)
-
-        ZZ1->(DBSkip())
-    EndDo 
-
-    oModelGrid:GoLine(1)
-    oView:Refresh("VIEW_GRID")
-    oView:SetNoDeleteLine('VIEW_GRID')
-    oView:SetNoInsertLine('VIEW_GRID')
-
-Return
 
 /*/{Protheus.doc} FFINR002
 Relatório de importação do Arquivo de Retorno CNAB de Cobrança
@@ -231,8 +169,9 @@ Static Function fMontaRel()
 
     //Posição das Colunas
     Private nPosNumT := 0010
-    Private nPosNNum := 0090
-    Private nPosDTBX := 0180
+    Private nPosParc := 0080
+    Private nPosNNum := 0120
+    Private nPosDTBX := 0190
     Private nPosDesp := 0230
     Private nPosDesc := 0300
     Private nPosAbat := 0370
@@ -258,6 +197,7 @@ Static Function fMontaRel()
         oModelGrid:GoLine(nY)
 	
         oPrintRel:SayAlign(nLinAtu, nPosNumT, oModelGrid:GetValue("ZZ1_NUMTIT")                                     , oFontDet, 100, 07, , nPadLeft,)
+        oPrintRel:SayAlign(nLinAtu, nPosParc, oModelGrid:GetValue("ZZ1_PARCEL")                                     , oFontDet, 100, 07, , nPadLeft,)
         oPrintRel:SayAlign(nLinAtu, nPosNNum, oModelGrid:GetValue("ZZ1_NSNUM")                                      , oFontDet, 100, 07, , nPadLeft,)
         oPrintRel:SayAlign(nLinAtu, nPosDTBX, DToC(oModelGrid:GetValue("ZZ1_DBAIXA"))                               , oFontDet, 100, 07, , nPadLeft,)
         oPrintRel:SayAlign(nLinAtu, nPosDesp, AllTrim(AllToChar(oModelGrid:GetValue("ZZ1_VLDESP"),cPictVal, .F.))   , oFontDet, 100, 07, , nPadLeft,)
@@ -288,7 +228,7 @@ Static Function fMontaRel()
 	    ElseIf nY == oModelGrid:Length()
             nLinAtu += 10
 
-            oPrintRel:SayAlign(nLinAtu, nPosDTBX, "Qtd. Titulos: " + cValToChar(nTotTit)      , oFontDetN, 100, 07, , nPadLeft,)
+            oPrintRel:SayAlign(nLinAtu, nPosNumT, "Qtd. Titulos: " + cValToChar(nTotTit)      , oFontDetN, 100, 07, , nPadLeft,)
             oPrintRel:SayAlign(nLinAtu, nPosDTBX, "Totais: "                                  , oFontDetN, 100, 07, , nPadLeft,)
             oPrintRel:SayAlign(nLinAtu, nPosDesp, AllTrim(AllToChar(nTotDesp,cPictVal, .F.))  , oFontDetN, 100, 07, , nPadLeft,)
             oPrintRel:SayAlign(nLinAtu, nPosDesc, AllTrim(AllToChar(nTotDesc,cPictVal, .F.))  , oFontDetN, 100, 07, , nPadLeft,)
@@ -352,7 +292,8 @@ Static Function fImpCab()
 	//Cabecalho com descricao das colunas
 	nLinCab += 20
 	
-	oPrintRel:SayAlign(nLinCab, nPosNumT, "Num Titulo"  ,   oFontDetN, 100, 07, , nPadLeft,)	
+	oPrintRel:SayAlign(nLinCab, nPosNumT, "Num Titulo"  ,   oFontDetN, 100, 07, , nPadLeft,)
+    oPrintRel:SayAlign(nLinCab, nPosParc, "Parcela"     ,   oFontDetN, 100, 07, , nPadLeft,)	
 	oPrintRel:SayAlign(nLinCab, nPosNNum, "Nosso Numero",   oFontDetN, 100, 07, , nPadLeft,)
     oPrintRel:SayAlign(nLinCab, nPosDTBX, "Dt Baixa"    ,   oFontDetN, 100, 07, , nPadLeft,)
 	oPrintRel:SayAlign(nLinCab, nPosDesp, "Vlr. Despesa",   oFontDetN, 100, 07, , nPadLeft,)
