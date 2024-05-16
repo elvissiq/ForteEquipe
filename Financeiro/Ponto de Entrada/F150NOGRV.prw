@@ -19,13 +19,15 @@ User Function F150NOGRV()
         
         DBselectArea("ZZ1")
         If ZZ1->(MSSeek(xFilial("ZZ1")+Pad(cNomArq,FWTamSX3("ZZ1_ARQUIV")[1])+;
-                                       Pad(SE1->E1_NUM,FWTamSX3("ZZ1_NUMTIT")[1])))
+                                       Pad(SE1->E1_NUM,FWTamSX3("ZZ1_NUMTIT")[1])+;
+                                       Pad(SE1->E1_PARCELA,FWTamSX3("ZZ1_PARCEL")[1])))
             lInclui := .F. //Alteração
         EndIf 
 
         RecLock("ZZ1",lInclui)
             ZZ1->ZZ1_FILIAL := xFilial("ZZ1")
             ZZ1->ZZ1_NUMTIT := SE1->E1_NUM
+            ZZ1->ZZ1_PARCEL := SE1->E1_PARCELA
             ZZ1->ZZ1_DBAIXA := SE1->E1_BAIXA
             ZZ1->ZZ1_TIPO   := SE1->E1_TIPO
             ZZ1->ZZ1_NSNUM  := SE1->E1_IDCNAB
