@@ -434,15 +434,15 @@ Static Function fMontaRel(oProc)
 			//Imprime o Total do Pedido
 			fImpTot()
 			
-			//Se tiver mensagem da observacao
-			If !Empty(QRY_PED->C5_MENNOTA)
-				fMsgObs()
-			EndIf
-			
 			//Se deveria ser impresso as duplicatas
 			If cImpDupl == "1"
 				fImpDupl()
 			EndIf
+
+			//Se tiver mensagem da observacao
+			//If !Empty(QRY_PED->C5_MENNOTA)
+				fMsgObs()
+			//EndIf
 			
 			//Imprime o rodape
 			fImpRod()
@@ -557,9 +557,9 @@ Static Function fImpCab()
 	oPrintPvt:SayAlign(nLinCab, nColMeio+048, QRY_PED->ENDERECO,			 					oFontCab,  300, 07, , nPadLeft, )
 	nLinCab += 10
 	oPrintPvt:SayAlign(nLinCab, nColMeio+8, "Bairro, Cidade - UF:",                             oFontCabN, 090, 07, , nPadLeft, )
-	oPrintPvt:SayAlign(nLinCab, nColMeio+100, QRY_PED->BAIRRO,	 								oFontCab,  130, 07, , nPadLeft, )
-	oPrintPvt:SayAlign(nLinCab, nColMeio+200,","+QRY_PED->MUNICIPIO, 							oFontCab,  180, 07, , nPadLeft, )
-	oPrintPvt:SayAlign(nLinCab, nColMeio+300," - "+QRY_PED->ESTADO,								oFontCab,  200, 07, , nPadLeft, )
+	oPrintPvt:SayAlign(nLinCab, nColMeio+083, Alltrim(QRY_PED->BAIRRO) +;
+											  ", "+Alltrim(QRY_PED->MUNICIPIO) +;
+											  " - "+QRY_PED->ESTADO,							oFontCab,  130, 07, , nPadLeft, )
 	nLinCab += 10
 	oPrintPvt:SayAlign(nLinCab, nColMeio+8, "Vendedor:",                                        oFontCabN, 060, 07, , nPadLeft, )
 	oPrintPvt:SayAlign(nLinCab, nColMeio+50, QRY_PED->C5_VEND1 + " - "+QRY_PED->A3_NREDUZ,      oFontCab,  120, 07, , nPadLeft, )
@@ -797,49 +797,38 @@ Return
  *---------------------------------------------------------------------*/
 
 Static Function fMsgObs()
-	Local aMsg  := {"", "", ""}
-	Local nQueb := 100
-	Local cMsg  := Alltrim(QRY_PED->C5_MENNOTA)
-	nLinAtu += 4
+	Local nTotCarac := 200
+	Local nLinMsg   := 0
+	Local cMsg  := ""
+	Local nId
+
+	cMsg += "Notas gerais: É de responsabilidade do destinatário o descarregamento e a conferência da "
+	cMsg += "quantidade e qualidade dos equipamentos no momento da retirada ou recebimento. "
+	cMsg += "Qualquer reclamação deve ser feita imediatamente no momento do recebimento, através do  "
+	cMsg += "e-mail sac@fortequip.com.br "
+
+	cMsg += (Chr(10) + Chr (13)) + Alltrim(QRY_PED->C5_MENNOTA)
+
+	nLinMsg := IIF(MLCount(cMsg,nTotCarac)>0,MLCount(cMsg,nTotCarac),1)
 	
 	//Se atingir o fim da Página, quebra
-	If nLinAtu + 40 >= nLinFin
+	If nLinAtu + (nLinMsg + 40) >= nLinFin
 		fImpRod()
 		fImpCab()
 	EndIf
 	
+	//Cria o grupo de Observação
+	oPrintPvt:SayAlign(nLinAtu, nColIni, "Observações: ",   oFontTit,  100, nTamFundo, nCorAzul, nPadLeft, )
+	nLinAtu += 020
+
 	//Quebrando a mensagem
-	If Len(cMsg) > nQueb
-		aMsg[1] := SubStr(cMsg,    1, nQueb)
-		aMsg[1] := SubStr(aMsg[1], 1, RAt(' ', aMsg[1]))
-		
-		//Pegando o restante e adicionando nas outras linhas
-		cMsg := Alltrim(SubStr(cMsg, Len(aMsg[1])+1, Len(cMsg)))
-		If Len(cMsg) > nQueb
-			aMsg[2] := SubStr(cMsg,    1, nQueb)
-			aMsg[2] := SubStr(aMsg[2], 1, RAt(' ', aMsg[2]))
-			
-			cMsg := Alltrim(SubStr(cMsg, Len(aMsg[2])+1, Len(cMsg)))
-			aMsg[3] := cMsg
-		Else
-			aMsg[2] := cMsg
-		EndIf
-	Else
-		aMsg[1] := cMsg
-	EndIf
-	
-	//Cria o grupo de observação
-	oPrintPvt:Box(nLinAtu, nColIni, nLinAtu + 038, nColFin)
-	oPrintPvt:Line(nLinAtu+nTamFundo, nColIni, nLinAtu+nTamFundo, nColFin)
-	nLinAtu += nTamFundo - 5
-	oPrintPvt:SayAlign(nLinAtu-10, nColIni+5, "Observacao:",                oFontTit,  100, nTamFundo, nCorAzul, nPadLeft, )
-	nLinAtu += 5
-	oPrintPvt:SayAlign(nLinAtu, nColIni+0005, aMsg[1],                      oFontCab,  400, 07, , nPadLeft, )
-	nLinAtu += 7
-	oPrintPvt:SayAlign(nLinAtu, nColIni+0005, aMsg[2],                      oFontCab,  400, 07, , nPadLeft, )
-	nLinAtu += 7
-	oPrintPvt:SayAlign(nLinAtu, nColIni+0005, aMsg[3],                      oFontCab,  400, 07, , nPadLeft, )
-	nLinAtu += 10
+	For nId := 1 To nLinMsg
+		oPrintPvt:SayAlign(nLinAtu, nColIni, MemoLine(cMsg,nTotCarac,nId),    oFontCab,  1000, 07, , nPadLeft, )
+	nLinAtu += 010
+	Next 
+
+	nLinAtu += 010
+
 Return
 
 /*---------------------------------------------------------------------*
@@ -987,7 +976,8 @@ Static Function fImpDupl()
 		EndIf
 	Next
 
-	nLinAtu += (nLinhas*7) + 3
-	nLinAtu += 3
-	oPrintPvt:Line(nLinDup+nTamFundo, nColIni+3, nLinDup+nTamFundo, nColFin)
+	nLinAtu += (nLinhas*7) + 5
+	//oPrintPvt:Line(nLinDup+nTamFundo, nColIni+3, nLinDup+nTamFundo, nColFin)
+	oPrintPvt:Line(nLinAtu, nColIni+3, nLinAtu, nColFin)
+	nLinAtu += 10
 Return
