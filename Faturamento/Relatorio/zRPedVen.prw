@@ -799,33 +799,55 @@ Return
 Static Function fMsgObs()
 	Local nTotCarac := 200
 	Local nLinMsg   := 0
-	Local cMsg  := ""
+	Local cMsg1  := ""
+	Local cMsg2  := Alltrim(SC5->C5_MENNOTA)
+	Local cMsg3  := IIF(SC5->(FieldPos("C5_XMSGI")) > 0, Alltrim(SC5->C5_XMSGI), "" )
 	Local nId
 
-	cMsg += "Notas gerais: É de responsabilidade do destinatário o descarregamento e a conferência da "
-	cMsg += "quantidade e qualidade dos equipamentos no momento da retirada ou recebimento. "
-	cMsg += "Qualquer reclamação deve ser feita imediatamente no momento do recebimento, através do  "
-	cMsg += "e-mail sac@fortequip.com.br "
+	cMsg1 += "Notas gerais: É de responsabilidade do destinatário o descarregamento e a conferência da "
+	cMsg1 += "quantidade e qualidade dos equipamentos no momento da retirada ou recebimento. "
+	cMsg1 += "Qualquer reclamação deve ser feita imediatamente no momento do recebimento, através do  "
+	cMsg1 += "e-mail sac@fortequip.com.br "
 
-	cMsg += (Chr(10) + Chr (13)) + Alltrim(QRY_PED->C5_MENNOTA)
+	oPrintPvt:SayAlign(nLinAtu, nColIni, "Observações: ",   oFontTit,  100, nTamFundo, nCorAzul, nPadLeft, )
 
-	nLinMsg := IIF(MLCount(cMsg,nTotCarac)>0,MLCount(cMsg,nTotCarac),1)
-	
-	//Se atingir o fim da Página, quebra
+	//Mensagem 1
+	nLinMsg := IIF(MLCount(cMsg1,nTotCarac)>0,MLCount(cMsg1,nTotCarac),1)
+	nLinAtu += 020
 	If nLinAtu + (nLinMsg + 40) >= nLinFin
 		fImpRod()
 		fImpCab()
 	EndIf
-	
-	//Cria o grupo de Observação
-	oPrintPvt:SayAlign(nLinAtu, nColIni, "Observações: ",   oFontTit,  100, nTamFundo, nCorAzul, nPadLeft, )
-	nLinAtu += 020
-
-	//Quebrando a mensagem
 	For nId := 1 To nLinMsg
-		oPrintPvt:SayAlign(nLinAtu, nColIni, MemoLine(cMsg,nTotCarac,nId),    oFontCab,  1000, 07, , nPadLeft, )
+		oPrintPvt:SayAlign(nLinAtu, nColIni, MemoLine(cMsg1,nTotCarac,nId),    oFontCab,  1000, 07, , nPadLeft, )
 	nLinAtu += 010
 	Next 
+
+	//Mensagem 2
+	If !Empty(cMsg2)
+		nLinMsg := IIF(MLCount(cMsg2,nTotCarac)>0,MLCount(cMsg2,nTotCarac),1)
+		If nLinAtu + (nLinMsg + 40) >= nLinFin
+			fImpRod()
+			fImpCab()
+		EndIf
+		For nId := 1 To nLinMsg
+			oPrintPvt:SayAlign(nLinAtu, nColIni, MemoLine(cMsg2,nTotCarac,nId),    oFontCab,  1000, 07, , nPadLeft, )
+		nLinAtu += 010
+		Next
+	EndIF 
+
+	//Mensagem 3
+	If !Empty(cMsg3)
+		nLinMsg := IIF(MLCount(cMsg3,nTotCarac)>0,MLCount(cMsg3,nTotCarac),1)
+		If nLinAtu + (nLinMsg + 40) >= nLinFin
+			fImpRod()
+			fImpCab()
+		EndIf
+		For nId := 1 To nLinMsg
+			oPrintPvt:SayAlign(nLinAtu, nColIni, MemoLine(cMsg3,nTotCarac,nId),    oFontCab,  1000, 07, , nPadLeft, )
+		nLinAtu += 010
+		Next
+	EndIF
 
 	nLinAtu += 010
 
@@ -833,7 +855,7 @@ Return
 
 /*---------------------------------------------------------------------*
  | Func:  fMontDupl                                                    |
- | Desc:  FunÃ§Ã£o que monta o array de duplicatas                       |
+ | Desc:  Função que monta o array de duplicatas                       |
  *---------------------------------------------------------------------*/
 
 Static Function fMontDupl()
