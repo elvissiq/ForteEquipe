@@ -8,11 +8,11 @@
  *------------------------------------------------------------------------------------------------------*/
  
 User Function M460FIM()
-    Local aAreaSF2 := SF2->(GetArea())
-    Local aAreaSA1 := SA1->(GetArea())
-    Local aAreaSE1 := SE1->(GetArea())
-    Local _cAlias  := GetNextAlias()
-    Local cQry     := ""
+    Local aAreaSF2  := SF2->(FWGetArea())
+    Local aAreaSA1  := SA1->(FWGetArea())
+    Local aAreaSE1  := SE1->(FWGetArea())
+    Local _cAlias   := GetNextAlias()
+    Local cQry      := ""
     
     Private cTipoCart := Space(FwTamSx3("E1_TIPO")[1])
     Private cAutoriz  := Space(FwTamSx3("E1_CARTAUT")[1])
@@ -22,53 +22,65 @@ User Function M460FIM()
         zPreCart()
         If Empty(cTipoCart) .Or. Empty(cAutoriz) .Or. Empty(cNSU)
             FWAlertWarning("Processo de atualização do título estornado devido a um ou mais campos não está preenchido","ATENÇÃO")
-            RestArea(aAreaSF2)
-            RestArea(aAreaSA1)
-            RestArea(aAreaSE1)
+            FWRestArea(aAreaSF2)
+            FWRestArea(aAreaSA1)
+            FWRestArea(aAreaSE1)
             Return
         EndIF
     Else
-        RestArea(aAreaSF2)
-        RestArea(aAreaSA1)
-        RestArea(aAreaSE1)
+        FWRestArea(aAreaSF2)
+        FWRestArea(aAreaSA1)
+        FWRestArea(aAreaSE1)
         Return
     EndIF
 
-    cQry := " Select E1_CLIENTE, E1_LOJA, E1_PREFIXO, E1_NUM, E1_PARCELA, E1_TIPO, E1_VALOR from " + RetSqlName("SE1")
-    cQry += "  where D_E_L_E_T_ <> '*'"
-    cQry += "    and E1_FILIAL  = '" + xFilial("SE1") + "'"
-    cQry += "    and E1_CLIENTE  = '" + SF2->F2_CLIENTE + "'"
-    cQry += "    and E1_LOJA  = '" + SF2->F2_LOJA + "'"
-    cQry += "    and E1_PREFIXO  = '" + SF2->F2_SERIE + "'"
-    cQry += "    and E1_NUM  = '" + SF2->F2_DOC + "'"
+    cQry := " SELECT E1_FILIAL, E1_PREFIXO, E1_NUM, E1_PARCELA, E1_TIPO, E1_CLIENTE, E1_LOJA FROM " + RetSqlName("SE1")
+    cQry += " WHERE D_E_L_E_T_ <> '*'"
+    cQry += "       AND E1_FILIAL  = '" + xFilial("SE1") + "'"
+    cQry += "       AND E1_CLIENTE = '" + SF2->F2_CLIENTE + "'"
+    cQry += "       AND E1_LOJA    = '" + SF2->F2_LOJA + "'"
+    cQry += "       AND E1_PREFIXO = '" + SF2->F2_SERIE + "'"
+    cQry += "       AND E1_NUM     = '" + SF2->F2_DOC + "'"
     cQry := ChangeQuery(cQry)
+    IF Select(_cAlias) <> 0
+        (_cAlias)->(DBCloseArea())
+    EndIf
     dbUseArea(.T.,"TOPCONN",TCGenQry(,,cQry),_cAlias,.F.,.T.)
+    
+    DBSelectArea("SE1")
+    DBSelectArea("FK7")
+    SE1->(DbSetOrder(1)) //E1_FILIAL+E1_PREFIXO+E1_NUM+E1_PARCELA+E1_TIPO
+    FK7->(DbSetOrder(3)) //FK7_FILIAL+FK7_ALIAS+FK7_FILTIT+FK7_PREFIX+FK7_NUM+FK7_PARCEL+FK7_TIPO+FK7_CLIFOR+FK7_LOJA
+    SE1->(DBGoTop())
+    FK7->(DBGoTop())
 
     While !(_cAlias)->(EOF())
-    
-        DBSelectArea("SE1")
-        SE1->(DBSetOrder(1)) //E1_FILIAL+E1_PREFIXO+E1_NUM+E1_PARCELA+E1_TIPO
-        SE1->(DBGoTop())
         If SE1->(MsSeek(xFilial("SE1")+(_cAlias)->E1_PREFIXO+(_cAlias)->E1_NUM+(_cAlias)->E1_PARCELA+(_cAlias)->E1_TIPO))
-            
                 RecLock("SE1",.F.)
                     SE1->E1_TIPO    := cTipoCart
                     SE1->E1_CARTAUT := cAutoriz
                     SE1->E1_NSUTEF  := cNSU
                 SE1->(MsUnlock())
-        EndIf  
+        EndIf
+        If FK7->(MsSeek(xFilial("FK7")+"SE1"+(_cAlias)->E1_FILIAL+(_cAlias)->E1_PREFIXO+(_cAlias)->E1_NUM+(_cAlias)->E1_PARCELA+;
+                                             (_cAlias)->E1_TIPO+(_cAlias)->E1_CLIENTE+(_cAlias)->E1_LOJA))
 
+                RecLock("FK7",.F.)
+                    FK7->FK7_CHAVE := (_cAlias)->E1_FILIAL + "|" + (_cAlias)->E1_PREFIXO + "|" + (_cAlias)->E1_NUM + "|" + ;
+                                      Pad(cTipoCart,FwTamSx3("E1_TIPO")[1]) + "|" + (_cAlias)->E1_CLIENTE + "|" + (_cAlias)->E1_LOJA
+                    FK7->FK7_TIPO  := cTipoCart
+                FK7->(MsUnlock())
+        EndIf
         (_cAlias)->(DbSkip())
-
     EndDo
 
     IF Select(_cAlias) <> 0
         (_cAlias)->(DBCloseArea())
     EndIf
 
-    RestArea(aAreaSF2)
-    RestArea(aAreaSA1)
-    RestArea(aAreaSE1)
+    FWRestArea(aAreaSF2)
+    FWRestArea(aAreaSA1)
+    FWRestArea(aAreaSE1)
     
 Return
 
