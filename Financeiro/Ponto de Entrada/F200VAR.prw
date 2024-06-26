@@ -34,6 +34,7 @@ User Function F200VAR()
     Local aAreaSE1 := SE1->(FWGetArea())
     Local cNTitulo := Alltrim(Paramixb[1][1])
     Local cIDCnab  := Alltrim(Paramixb[1][4])
+    Local nVlJuros := Paramixb[1][9]
     Local cOrgTit  := SuperGetMV("MV_XORGTIT",.F.,"IMPORT")
     Local cQry     := ""
     Local _cAlias  := GetNextAlias()
@@ -50,27 +51,32 @@ User Function F200VAR()
     EndIf
     TCQuery cQry New Alias &_cAlias
 
+    DBselectArea("SE1")
+
     IF !(_cAlias)->(Eof())
 
-        DBselectArea("SE1")
         SE1->(DbSetOrder(2))
         SE1->(DBGoTop())
         IF SE1->(MsSeek(xFilial("SE1")+(_cAlias)->E1_CLIENTE+(_cAlias)->E1_LOJA+(_cAlias)->E1_PREFIXO+(_cAlias)->E1_NUM+(_cAlias)->E1_PARCELA+(_cAlias)->E1_TIPO))
             
             RecLock("SE1",.F.)
                 SE1->E1_IDCNAB := cNTitulo
-            SE1->(MSUnLock())
-
-            If SE1->E1_SALDO < nValRec
-                nJuros += (nValRec - SE1->E1_SALDO)
-                Paramixb[1][9] += (nValRec - SE1->E1_SALDO)
-            EndIF 
+            SE1->(MSUnLock()) 
 
         EndIF 
 
     EndIF 
 
     (_cAlias)->(DbCloseArea()) 
+
+    SE1->(DbSetOrder(16))
+    SE1->(DBGoTop())
+    IF SE1->(MsSeek(xFilial("SE1") + cNTitulo ))
+        If SE1->E1_SALDO < nValRec
+            nJuros += ( (nValRec - nVlJuros ) - SE1->E1_SALDO ) + nDespes
+            Paramixb[1][9] += ( (nValRec - nVlJuros ) - SE1->E1_SALDO ) + nDespes
+        EndIF
+    EnDIF 
 
     FWRestArea(aAreaSE1)
  
