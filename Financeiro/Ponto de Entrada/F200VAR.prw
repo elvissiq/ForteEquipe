@@ -33,7 +33,7 @@ User Function F200VAR()
     Local aDados   := PARAMIXB
     Local aAreaSE1 := SE1->(FWGetArea())
     Local cNTitulo := Alltrim(Paramixb[1][1])
-    Local cIDCnab  := Alltrim(Paramixb[1][4])
+    Local cIdCNAB  := Alltrim(Paramixb[1][4])
     Local nVlJuros := Paramixb[1][9]
     Local cOrgTit  := SuperGetMV("MV_XORGTIT",.F.,"IMPORT")
     Local cQry     := ""
@@ -45,7 +45,7 @@ User Function F200VAR()
     cQry += "   AND E1_FILIAL = '" + xFilial("SE1") + "' "
     cQry += "   AND E1_SALDO  > 0 "
     cQry += "   AND E1_ORIGEM = '" + cOrgTit + "' "
-    cQry += "   AND E1_IDCNAB LIKE ('" + cIDCnab + "%') "
+    cQry += "   AND E1_IDCNAB LIKE ('" + cIdCNAB + "%') "
     IF Select(_cAlias) <> 0
         (_cAlias)->(DbCloseArea())
     EndIf
