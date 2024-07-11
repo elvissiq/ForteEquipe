@@ -52,67 +52,48 @@ User Function VALFINREC()
 Return
 
 Static Function xProcessa()
-    Local oExcel
-    Local aTamLin
-    Local nContP,nContL
-    Local cArq 
+    Local oFile   := Nil
+    Local aArq    := {}
+    Local aArqAux := {}
+    Local cArq    := ""
+    Local nY
 
-    cArq := tFileDialog( "Arquivo de planilha Excel (*.xlsx) | Todos tipos (*.*)",,,, .F., /*GETF_MULTISELECT*/)
-    oExcel	:= YExcel():new(,cArq)
+    cArq  := tFileDialog( "Arquivo de planilha Excel (*.txt) | Todos tipos (*.txt)",,,, .F., /*GETF_MULTISELECT*/)
+    oFile := FWFileReader():New(cArq)
 
-    If !Empty(cArq)
+    If (oFile:Open())
         DBSelectArea(cTabela)
         &(cTabela)->(DBSetOrder(1))
+        
+        aArq := oFile:getAllLines()
 
-        For nContP := 1 To oExcel:LenPlanAt()	        //Ler as Planilhas
-            oExcel:SetPlanAt(nContP)		            //Informa qual a planilha atual
-            ConOut("Planilha:"+oExcel:GetPlanAt("2"))	//Nome da Planilha
-            aTamLin	:= oExcel:LinTam() 		            //Linha inicio e fim da linha
-            ProcRegua(aTamLin[2])
-            For nContL := aTamLin[1] To aTamLin[2]
+        ProcRegua(Len(aArq))
 
-                aTamCol	:= oExcel:ColTam(nContL)
+        For nY := 1 To Len(aArq)
 
-                IncProc("Gravando alteração " + cValToChar(nContL) + " de " + cValToChar(aTamLin[2]) + "...")
-                
-                If aTamCol[1] > 0
+            IncProc("Gravando alteração " + cValToChar(nY) + " de " + cValToChar(Len(aArq)) + "...")
 
-                    &(cTabela)->(DBGoTop())
-                    If cTabela $('SA1')
-                        IF &(cTabela)->(MsSeek(Pad(oExcel:GetValue(nContL,1),TamSX3(SubSTR(cTabela,2)+"_FILIAL")[1])+;
-                                        Pad(oExcel:GetValue(nContL,2),TamSX3(SubSTR(cTabela,2)+"_COD")[1])+;
-                                        Pad(oExcel:GetValue(nContL,3),TamSX3(SubSTR(cTabela,2)+"_LOJA")[1])))
-                            
-                            RecLock(cTabela,.F.)
-                                &(cTabela)->(&(cCampo)) := Alltrim(oExcel:GetValue(nContL,4))
-                            &(cTabela)->(MsUnLock())
-                        
-                        Else 
-                            FWAlertError("Linha "+cValToChar(nContL),"Não Posicionou!")
-                        EndIF
-
-                    ElseIf cTabela $('SE1/SE2')
-                        IF &(cTabela)->(MsSeek(Pad(oExcel:GetValue(nContL,1),TamSX3(SubSTR(cTabela,2)+"_FILIAL")[1])+;
-                                        Pad(oExcel:GetValue(nContL,2),TamSX3(SubSTR(cTabela,2)+"_PREFIXO")[1])+;
-                                        Pad(oExcel:GetValue(nContL,3),TamSX3(SubSTR(cTabela,2)+"_NUM")[1])+;
-                                        Pad(oExcel:GetValue(nContL,4),TamSX3(SubSTR(cTabela,2)+"_PARCELA")[1])+;
-                                        Pad(oExcel:GetValue(nContL,5),TamSX3(SubSTR(cTabela,2)+"_TIPO")[1])))
-                            
-                            RecLock(cTabela,.F.)
-                                &(cTabela)->(&(cCampo))  := Alltrim(oExcel:GetValue(nContL,6))
-                            &(cTabela)->(MsUnLock())
-                        
-                        Else 
-                            FWAlertError("Linha "+cValToChar(nContL),"Não Posicionou!")
-                        EndIF
-                    EndIF 
-
-                EndIf
+            aArqAux := Strtokarr(aArq[nY], ";")
             
-            Next
+            If cTabela $('SE1/SE2') .And. Len(aArqAux) == 6
+                IF &(cTabela)->(MsSeek(Pad(aArqAux[1],TamSX3(SubSTR(cTabela,2)+"_FILIAL")[1])+;
+                                Pad(aArqAux[2],TamSX3(SubSTR(cTabela,2)+"_PREFIXO")[1])+;
+                                Pad(aArqAux[3],TamSX3(SubSTR(cTabela,2)+"_NUM")[1])+;
+                                Pad(aArqAux[4],TamSX3(SubSTR(cTabela,2)+"_PARCELA")[1])+;
+                                Pad(aArqAux[5],TamSX3(SubSTR(cTabela,2)+"_TIPO")[1])))
+                    
+                    RecLock(cTabela,.F.)
+                        &(cTabela)->(&(cCampo))  := Alltrim(aArqAux[6])
+                    &(cTabela)->(MsUnLock())
+                
+                Else 
+                    FWAlertError("Linha "+cValToChar(nY),"Não Posicionou!")
+                EndIF
+            EndIF 
         Next 
+ 
     EndIf 
 
-    oExcel:Close()
+    oFile :Close()
 
 Return
