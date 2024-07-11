@@ -32,9 +32,8 @@ User Function F200VAR()
  
     Local aDados   := PARAMIXB
     Local aAreaSE1 := SE1->(FWGetArea())
-    //Local cNTitulo := Alltrim(Paramixb[1][1])
     Local cIdCNAB  := Alltrim(Paramixb[1][4])
-    //Local nVlJuros := Paramixb[1][9]
+    Local nVlJuros := Paramixb[1][9]
     Local cOrgTit  := SuperGetMV("MV_XORGTIT",.F.,"IMPORT")
     Local cQry     := ""
     Local _cAlias  := GetNextAlias()
@@ -72,16 +71,14 @@ User Function F200VAR()
 
     (_cAlias)->(DbCloseArea()) 
 
-    /*
     SE1->(DbSetOrder(16))
     SE1->(DBGoTop())
-    IF SE1->(MsSeek(xFilial("SE1") + cNTitulo ))
+    IF SE1->(MsSeek(xFilial("SE1") + cNumTit ))
         If SE1->E1_SALDO < nValRec
             nJuros += ( (nValRec - nVlJuros ) - SE1->E1_SALDO ) + nDespes
             Paramixb[1][9] += ( (nValRec - nVlJuros ) - SE1->E1_SALDO ) + nDespes
         EndIF
     EnDIF 
-    */
 
     FWRestArea(aAreaSE1)
  
