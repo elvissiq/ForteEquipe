@@ -10,7 +10,7 @@ Static __oRegiFIF := Nil
 Leitura/Importação do arquivo de Conciliação CIELO
 @type function
 @author Elvis Siqueira
-@since 02/01/2024
+@since 06/09/2024
 /*/
 User Function FFIN001()
 
@@ -31,6 +31,10 @@ Static Function FIN1Proc()
     Local cTPVenda := ""
     Local cNSU := ""
     Local nParcel := 0
+    Local nValBru := 0
+    Local nValLiq := 0
+    Local nValCom := 0
+    Local nTXServ := 0
 
     cArq := tFileDialog( "Arquivo de planilha Excel (*.xlsx)",,,, .F., /*GETF_MULTISELECT*/)
 
@@ -134,29 +138,62 @@ Static Function FIN1Proc()
                         EndIF 
 
                         If lGrvFIF 
+
+                            If ValType(oExcel:GetValue(nContL,23)) == "N"
+                                nValBru := oExcel:GetValue(nContL,23)
+                            Else
+                                nValBru := STRTran(oExcel:GetValue(nContL,23),".","")
+                                nValBru := STRTran(nValBru,",",".")
+                                nValBru := Val(nValBru)
+                            EndIF
+                            
+                            If ValType(oExcel:GetValue(nContL,25)) == "N"
+                                nValLiq := oExcel:GetValue(nContL,25)
+                            Else
+                                nValLiq := STRTran(oExcel:GetValue(nContL,25),".","")
+                                nValLiq := STRTran(nValLiq,",",".")
+                                nValLiq := Val(nValLiq)
+                            EndIF
+                            
+                            If ValType(oExcel:GetValue(nContL,24)) == "N"
+                                nValCom := oExcel:GetValue(nContL,24)
+                            Else
+                                nValCom := STRTran(oExcel:GetValue(nContL,24),".","")
+                                nValCom := STRTran(nValCom,",",".")
+                                nValCom := Val(nValCom)
+                            EndIF
+
+                            If ValType(oExcel:GetValue(nContL,33)) == "N"
+                                nTXServ := oExcel:GetValue(nContL,33)
+                            Else
+                                nTXServ := STRTran(oExcel:GetValue(nContL,33),".","")
+                                nTXServ := STRTran(nTXServ,",",".")
+                                nTXServ := Val(nTXServ)
+                            EndIF
+                            
                             RecLock('FIF',.T.)
                                 FIF->FIF_FILIAL := FWxFilial("FIF") 
                                 FIF->FIF_TPREG  := "10"
                                 FIF->FIF_INTRAN := ""
                                 FIF->FIF_CODEST := IIF(ValType(oExcel:GetValue(nContL,36)) == "N", AsString(oExcel:GetValue(nContL,36)), oExcel:GetValue(nContL,36))
-                                FIF->FIF_DTTEF  := oExcel:GetValue(nContL,13)
+                                FIF->FIF_DTTEF  := IIF(ValType(oExcel:GetValue(nContL,13)) == "N", AsString(oExcel:GetValue(nContL,13)), oExcel:GetValue(nContL,13))
                                 FIF->FIF_NURESU := IIF(ValType(oExcel:GetValue(nContL,32)) == "N", AsString(oExcel:GetValue(nContL,32)), oExcel:GetValue(nContL,32))
                                 FIF->FIF_NUCOMP := PadL(IIF(ValType(oExcel:GetValue(nContL,32)) == "N", AsString(oExcel:GetValue(nContL,32)), oExcel:GetValue(nContL,32)), nTamNUCOMP, '0')
                                 FIF->FIF_NSUTEF := PadL(IIF(ValType(oExcel:GetValue(nContL,22)) == "N", AsString(oExcel:GetValue(nContL,22)), oExcel:GetValue(nContL,22)), nTamNSUTEF, '0')
-                                FIF->FIF_NUCART := oExcel:GetValue(nContL,18)
-                                FIF->FIF_VLBRUT := oExcel:GetValue(nContL,23)
+                                FIF->FIF_NUCART := IIF(ValType(oExcel:GetValue(nContL,18)) == "N", AsString(oExcel:GetValue(nContL,18)), oExcel:GetValue(nContL,18))
+                                FIF->FIF_VLBRUT := nValBru
                                 FIF->FIF_TOTPAR := IIF(ValType(oExcel:GetValue(nContL,17)) == "N", AsString(oExcel:GetValue(nContL,17)), oExcel:GetValue(nContL,17))
-                                FIF->FIF_VLLIQ  := oExcel:GetValue(nContL,25)
-                                FIF->FIF_DTCRED := oExcel:GetValue(nContL,12)
+                                FIF->FIF_VLLIQ  := nValLiq
+                                FIF->FIF_DTCRED := IIF(ValType(oExcel:GetValue(nContL,12)) == "N", AsString(oExcel:GetValue(nContL,12)), oExcel:GetValue(nContL,12))
                                 FIF->FIF_PARCEL := PadL(IIF(ValType(oExcel:GetValue(nContL,16)) == "N", AsString(oExcel:GetValue(nContL,16)), oExcel:GetValue(nContL,16)), nTamPARCEL, '0')
                                 FIF->FIF_TPPROD := cTPVenda
                                 FIF->FIF_CAPTUR := "1"
                                 FIF->FIF_CODRED := "340"
                                 FIF->FIF_CODBCO := "341"
                                 FIF->FIF_CODAGE := IIF(ValType(oExcel:GetValue(nContL,5)) == "N", AsString(oExcel:GetValue(nContL,5)), oExcel:GetValue(nContL,5))
-                                FIF->FIF_NUMCC  := oExcel:GetValue(nContL,6)
-                                FIF->FIF_VLCOM  := Abs(oExcel:GetValue(nContL,24))
-                                FIF->FIF_TXSERV := oExcel:GetValue(nContL,33)
+                                FIF->FIF_NUMCC  := IIF(ValType(oExcel:GetValue(nContL,6)) == "N", AsString(oExcel:GetValue(nContL,6)), oExcel:GetValue(nContL,6))
+                                FIF->FIF_VLCOM  := nValCom
+                                FIF->FIF_TXSERV := nTXServ
                                 FIF->FIF_CODLOJ := IIF(ValType(oExcel:GetValue(nContL,10)) == "N", AsString(oExcel:GetValue(nContL,10)), oExcel:GetValue(nContL,10))
                                 FIF->FIF_CODAUT := IIF(ValType(oExcel:GetValue(nContL,21)) == "N", AsString(oExcel:GetValue(nContL,21)), oExcel:GetValue(nContL,21))
                                 FIF->FIF_CUPOM  := IIF(ValType(oExcel:GetValue(nContL,43)) == "N", AsString(oExcel:GetValue(nContL,43)), oExcel:GetValue(nContL,43))
