@@ -10,7 +10,7 @@ Static __oRegiFIF := Nil
 Leitura/Importação do arquivo de Conciliação CIELO
 @type function
 @author Elvis Siqueira
-@since 06/09/2024
+@since 09/09/2024
 /*/
 User Function FFIN001()
 
@@ -35,6 +35,10 @@ Static Function FIN1Proc()
     Local nValLiq := 0
     Local nValCom := 0
     Local nTXServ := 0
+    Local cQry    := ""
+    Local _cAlias := GetNextAlias()
+    Local dDtTEF  := CToD("//")
+    Local cCarAut := ""
 
     cArq := tFileDialog( "Arquivo de planilha Excel (*.xlsx)",,,, .F., /*GETF_MULTISELECT*/)
 
@@ -81,14 +85,14 @@ Static Function FIN1Proc()
                 
                         cSeqFIF := proxIdFIF()
 
-                        If FVR->(MSSeek(FWxFilial("FVR")+Pad(cSeqFIF,FwTamSX3("FVR_IDPROC")[1])))
+                        If FVR->(MSSeek(xFilial("FVR")+Pad(cSeqFIF,FwTamSX3("FVR_IDPROC")[1])))
                             RecLock('FVR',.F.)
                                 DbDelete()
                             FVR->(MsUnlock())
                         EndIF
 
                         RecLock('FVR',.T.)
-                            FVR_FILIAL := FWxFilial("FVR") 
+                            FVR_FILIAL := xFilial("FVR") 
                             FVR_DESCLE := "1"
                             FVR_IDPROC := cSeqFIF
                             FVR_NOMARQ := Alltrim(cArq)
@@ -107,14 +111,14 @@ Static Function FIN1Proc()
                             FVR_MODPAG := ""
                         FVR->(MsUnlock())
 
-                        If FV3->(MSSeek(FWxFilial("FV3")+Pad(cSeqFIF,FwTamSX3("FV3_IDPROC")[1])+Pad(AsString(nContL),FwTamSX3("FV3_LINARQ")[1])))
+                        If FV3->(MSSeek(xFilial("FV3")+Pad(cSeqFIF,FwTamSX3("FV3_IDPROC")[1])+Pad(AsString(nContL),FwTamSX3("FV3_LINARQ")[1])))
                             RecLock('FV3',.F.)
                                 DbDelete()
                             FV3->(MsUnlock())
                         EndIF
 
                         RecLock('FV3',.T.)
-                            FV3->FV3_FILIAL := FWxFilial("FV3") 
+                            FV3->FV3_FILIAL := xFilial("FV3") 
                             FV3->FV3_IDPROC := cSeqFIF
                             FV3->FV3_LINARQ := AsString(nContL)
                             FV3->FV3_NOMARQ := Alltrim(cArq)
@@ -127,7 +131,7 @@ Static Function FIN1Proc()
                         
                         lGrvFIF := .T.
 
-                        If FIF->(MSSeek(FWxFilial("FIF")+PadL(cNSU, nTamNSUTEF, '0')+PadL(AsString(nParcel), nTamPARCEL, '0')))
+                        If FIF->(MSSeek(xFilial("FIF")+PadL(cNSU, nTamNSUTEF, '0')+PadL(AsString(nParcel), nTamPARCEL, '0')))
                             If Empty(FIF->FIF_NUM)
                                 RecLock('FIF',.F.)
                                     DbDelete()
@@ -170,13 +174,36 @@ Static Function FIN1Proc()
                                 nTXServ := STRTran(nTXServ,",",".")
                                 nTXServ := Val(nTXServ)
                             EndIF
-                            
+
+                            dDtTEF := CToD("//")
+                            cCarAut := ""
+
+                            cQry := " SELECT E1_EMISSAO, E1_VENCREA, E1_CARTAUT "
+                            cQry += " FROM " + RetSqlName("SE1")
+                            cQry += " WHERE D_E_L_E_T_ <> '*' "
+                            cQry += " AND E1_FILIAL = '" + xFilial("SE1") + "' "
+                            cQry += " AND E1_PARCELA = '" + PadL(IIF(ValType(oExcel:GetValue(nContL,16)) == "N", AsString(oExcel:GetValue(nContL,16)), oExcel:GetValue(nContL,16)), nTamPARCEL, '0') + "' "
+                            cQry += " AND E1_NSUTEF LIKE ('%" + IIF(ValType(oExcel:GetValue(nContL,22)) == "N", AsString(oExcel:GetValue(nContL,22)), oExcel:GetValue(nContL,22)) + "%') "
+                            cQry += " AND E1_CARTAUT LIKE ('%" + IIF(ValType(oExcel:GetValue(nContL,21)) == "N", AsString(oExcel:GetValue(nContL,21)), oExcel:GetValue(nContL,21)) + "%') "
+                            IF Select(_cAlias) <> 0
+                                (_cAlias)->(DbCloseArea())
+                            EndIf
+                            TCQuery cQry New Alias &_cAlias
+                            IF (_cAlias)->(!Eof())
+                                dDtTEF := SToD((_cAlias)->E1_EMISSAO)
+                                cCarAut := AllTrim((_cAlias)->E1_CARTAUT)
+                            Else
+                                dDtTEF := IIF(ValType(oExcel:GetValue(nContL,13)) == "D", oExcel:GetValue(nContL,13), CToD(oExcel:GetValue(nContL,13)))
+                                cCarAut := IIF(ValType(oExcel:GetValue(nContL,21)) == "N", AsString(oExcel:GetValue(nContL,21)), oExcel:GetValue(nContL,21))
+                            EndIF
+                            (_cAlias)->(DbCloseArea())
+
                             RecLock('FIF',.T.)
-                                FIF->FIF_FILIAL := FWxFilial("FIF") 
+                                FIF->FIF_FILIAL := xFilial("FIF") 
                                 FIF->FIF_TPREG  := "10"
                                 FIF->FIF_INTRAN := ""
                                 FIF->FIF_CODEST := IIF(ValType(oExcel:GetValue(nContL,36)) == "N", AsString(oExcel:GetValue(nContL,36)), oExcel:GetValue(nContL,36))
-                                FIF->FIF_DTTEF  := IIF(ValType(oExcel:GetValue(nContL,13)) == "N", AsString(oExcel:GetValue(nContL,13)), oExcel:GetValue(nContL,13))
+                                FIF->FIF_DTTEF  := dDtTEF
                                 FIF->FIF_NURESU := IIF(ValType(oExcel:GetValue(nContL,32)) == "N", AsString(oExcel:GetValue(nContL,32)), oExcel:GetValue(nContL,32))
                                 FIF->FIF_NUCOMP := PadL(IIF(ValType(oExcel:GetValue(nContL,32)) == "N", AsString(oExcel:GetValue(nContL,32)), oExcel:GetValue(nContL,32)), nTamNUCOMP, '0')
                                 FIF->FIF_NSUTEF := PadL(IIF(ValType(oExcel:GetValue(nContL,22)) == "N", AsString(oExcel:GetValue(nContL,22)), oExcel:GetValue(nContL,22)), nTamNSUTEF, '0')
@@ -184,7 +211,7 @@ Static Function FIN1Proc()
                                 FIF->FIF_VLBRUT := nValBru
                                 FIF->FIF_TOTPAR := IIF(ValType(oExcel:GetValue(nContL,17)) == "N", AsString(oExcel:GetValue(nContL,17)), oExcel:GetValue(nContL,17))
                                 FIF->FIF_VLLIQ  := nValLiq
-                                FIF->FIF_DTCRED := IIF(ValType(oExcel:GetValue(nContL,12)) == "N", AsString(oExcel:GetValue(nContL,12)), oExcel:GetValue(nContL,12))
+                                FIF->FIF_DTCRED := IIF(ValType(oExcel:GetValue(nContL,11)) == "D", oExcel:GetValue(nContL,11), CToD(oExcel:GetValue(nContL,11)))
                                 FIF->FIF_PARCEL := PadL(IIF(ValType(oExcel:GetValue(nContL,16)) == "N", AsString(oExcel:GetValue(nContL,16)), oExcel:GetValue(nContL,16)), nTamPARCEL, '0')
                                 FIF->FIF_TPPROD := cTPVenda
                                 FIF->FIF_CAPTUR := "1"
@@ -195,7 +222,7 @@ Static Function FIN1Proc()
                                 FIF->FIF_VLCOM  := nValCom
                                 FIF->FIF_TXSERV := nTXServ
                                 FIF->FIF_CODLOJ := IIF(ValType(oExcel:GetValue(nContL,10)) == "N", AsString(oExcel:GetValue(nContL,10)), oExcel:GetValue(nContL,10))
-                                FIF->FIF_CODAUT := IIF(ValType(oExcel:GetValue(nContL,21)) == "N", AsString(oExcel:GetValue(nContL,21)), oExcel:GetValue(nContL,21))
+                                FIF->FIF_CODAUT := cCarAut
                                 FIF->FIF_CUPOM  := IIF(ValType(oExcel:GetValue(nContL,43)) == "N", AsString(oExcel:GetValue(nContL,43)), oExcel:GetValue(nContL,43))
                                 FIF->FIF_SEQREG := PadL(AsString(nContL), 6, '0')
                                 FIF->FIF_DTAJST := STOD("")
@@ -210,8 +237,8 @@ Static Function FIN1Proc()
                                 FIF->FIF_PARC   := ""
                                 FIF->FIF_TIPO   := ""
                                 FIF->FIF_PARALF := IIF(ValType(oExcel:GetValue(nContL,16)) == "N", AsString(oExcel:GetValue(nContL,16)), oExcel:GetValue(nContL,16))
-                                FIF->FIF_CODFIL := FWxFilial("FIF")
-                                FIF->FIF_CODBAN := "" //Posicione("MDE",2,FWxFilial("MDE")+Pad(UPPER(oModelGrid:GetValue("BANDEIR"))),"MDE_CODIGO")
+                                FIF->FIF_CODFIL := xFilial("FIF")
+                                FIF->FIF_CODBAN := "" //Posicione("MDE",2,xFilial("MDE")+Pad(UPPER(oModelGrid:GetValue("BANDEIR"))),"MDE_CODIGO")
                                 FIF->FIF_SEQFIF := cSeqFIF
                                 FIF->FIF_DTANT  := STOD("")
                                 FIF->FIF_STVEND := ""
@@ -231,7 +258,7 @@ Static Function FIN1Proc()
                                 FIF->FIF_NSUARQ := ""
                                 FIF->FIF_PGDES2 := ""
                                 FIF->FIF_IDORAJ := ""
-                                FIF->FIF_MSFIL  := FWxFilial("FIF")
+                                FIF->FIF_MSFIL  := xFilial("FIF")
                                 FIF->FIF_MODPAG := ""
                             FIF->(MsUnlock())
                         EndIf
