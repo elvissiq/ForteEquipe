@@ -100,23 +100,35 @@ Static Function fProcess()
         IncProc("Atualizando registro " + cValToChar(nAtual) + " de " + cValToChar(nTotal) + "...")
 
         IF MsFile(AllTrim((_cAliasQry)->X2_ARQUIVO))
-            cQryExec := "EXEC sp_rename '" + AllTrim((_cAliasQry)->X2_ARQUIVO) + "', '" + AllTrim((_cAliasQry)->X2_CHAVE + cNovGrp) + "' "
-
+            
+            cQryExec := "SELECT * INTO " + AllTrim((_cAliasQry)->X2_ARQUIVO) + "_BKP FROM " + AllTrim((_cAliasQry)->X2_ARQUIVO)
             nStatus := TCSQLExec(cQryExec)
-
-            IF nStatus < 0 
-                fGrvLog(TCSQLError(),(_cAliasQry)->X2_CHAVE,nAtual,nTotal,cQryExec)
-            Else
-                cQryExec := " UPDATE SX2"+ cAntGrp + "0 SET X2_ARQUIVO = '" + AllTrim((_cAliasQry)->X2_CHAVE + cNovGrp ) + "' "
-                cQryExec += " WHERE X2_CHAVE = '" + (_cAliasQry)->X2_CHAVE + "' "
+            IF nStatus >= 0 
                 
+                cQryExec := "DROP TABLE " + AllTrim((_cAliasQry)->X2_ARQUIVO)
                 nStatus := TCSQLExec(cQryExec)
-                IF nStatus < 0 
+                
+                IF nStatus >= 0
+                    
+                    cQryExec := " UPDATE SX2"+ cAntGrp + " SET X2_ARQUIVO = '" + AllTrim((_cAliasQry)->X2_CHAVE + cNovGrp ) + "' "
+                    cQryExec += " WHERE X2_CHAVE = '" + (_cAliasQry)->X2_CHAVE + "' "    
+                    nStatus := TCSQLExec(cQryExec)
+
+                    DBSelectArea((_cAliasQry)->X2_CHAVE)
+
+                    cQryExec := "INSERT INTO " + AllTrim((_cAliasQry)->X2_ARQUIVO) + " FROM " + AllTrim((_cAliasQry)->X2_CHAVE + cAntGrp ) + "_BKP"
+                    nStatus := TCSQLExec(cQryExec)
+                    IF nStatus < 0
+                        fGrvLog(TCSQLError(),(_cAliasQry)->X2_CHAVE,nAtual,nTotal,cQryExec)
+                    EndIF 
+                Else
                     fGrvLog(TCSQLError(),(_cAliasQry)->X2_CHAVE,nAtual,nTotal,cQryExec)
                 EndIF 
+            Else
+                fGrvLog(TCSQLError(),(_cAliasQry)->X2_CHAVE,nAtual,nTotal,cQryExec)
             EndIF 
         Else
-            cQryExec := " UPDATE SX2"+ cAntGrp + "0 SET X2_ARQUIVO = '" + AllTrim((_cAliasQry)->X2_CHAVE + cNovGrp ) + "' "
+            cQryExec := " UPDATE SX2"+ cAntGrp + " SET X2_ARQUIVO = '" + AllTrim((_cAliasQry)->X2_CHAVE + cNovGrp ) + "' "
             cQryExec += " WHERE X2_CHAVE = '" + (_cAliasQry)->X2_CHAVE + "' "
             
             nStatus := TCSQLExec(cQryExec)
