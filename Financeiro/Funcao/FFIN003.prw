@@ -93,7 +93,7 @@ Return
 
 Static Function xProcessa()
 
-	Local cArq 		:= tFileDialog( "Arquivo de planilha Excel (*.csv)",,,, .F., /*GETF_MULTISELECT*/)
+	Local cArq 		:= tFileDialog( "Arquivos de texto (*.txt;*.csv)",,,, .F., /*GETF_MULTISELECT*/)
 	Local nAtu 		:= 0
     Local nFim  	:= 0
 	Local cLinha 	:= ""
@@ -110,12 +110,17 @@ Static Function xProcessa()
     ProcRegua(nFim)
     FT_FGOTOP()
 
+	DBSelectArea("SA1")
 	DBSelectArea("ZZX")
 
 	While !FT_FEOF()
             
         nAtu++
         IncProc("Lendo a linha " + cValToChar(nAtu) + " de " + cValToChar(nFim) + "...")
+
+		If nAtu == 1
+			FT_FSKIP()
+		EndIF 
 
 		cLinha := FT_FREADLN()
                 
@@ -124,6 +129,13 @@ Static Function xProcessa()
             aRegistro := Separa(cLinha,";",.T.)
             
 			If Len(aRegistro) == 24
+
+				If SA1->(MSSeek(xFilial("SA1") + aRegistro[07] ))
+					If AllTrim(aRegistro[08]) <> SA1->A1_LOJA
+						aRegistro[09] := aRegistro[08]
+						aRegistro[08] := SA1->A1_LOJA
+					EndIF 
+				EndIF 
 
 				IF ! ZZX->(MSSeek(xFilial("ZZX") + Pad(aRegistro[01],FWTamSX3("ZZX_FILMOV")[1]) + ;
 												   Pad(aRegistro[02],FWTamSX3("ZZX_PREFIX")[1]) + ;
@@ -168,7 +180,23 @@ Static Function xProcessa()
 				EndIF 
 				
 			Else
-
+				Reclock("ZPX", .T.)
+					REPLACE ZPX_ID 		WITH PadR(cNumImp,FWTamSX3("ZZX_IMPORT")[1])
+					REPLACE ZPX_PREFIX 	WITH Pad(aRegistro[02],FWTamSX3("ZZX_PREFIX")[1])
+					REPLACE ZPX_NUM 	WITH Pad(aRegistro[03],FWTamSX3("ZZX_NUM")[1]   )
+					REPLACE ZPX_PARCEL 	WITH Pad(aRegistro[04],FWTamSX3("ZZX_PARCEL")[1])
+					REPLACE ZPX_TIPO	WITH Pad(aRegistro[05],FWTamSX3("ZZX_TIPO")[1]  )
+					REPLACE ZPX_FORNEC 	WITH Pad(aRegistro[07],FWTamSX3("ZZX_CLIENT")[1])
+					REPLACE ZPX_LOJA 	WITH Pad(aRegistro[08],FWTamSX3("ZZX_LOJA")[1]  )
+					REPLACE ZPX_VALOR 	WITH Val(aRegistro[13])
+					REPLACE ZPX_EMISSA 	WITH CToD(aRegistro[10])
+					REPLACE ZPX_VENC 	WITH CToD(aRegistro[11])
+					REPLACE ZPX_VENCR 	WITH CToD(aRegistro[12])
+					REPLACE ZPX_HORA 	WITH FWTimeStamp(2)
+					REPLACE ZPX_TPMV 	WITH "RECEBER"
+					REPLACE ZPX_HELP 	WITH "Linha " + cValToChar(nAtu) + "- Possui menos colunas que o previsto."
+					REPLACE ZPX_LINHA 	WITH cLinha
+				ZPX->(MsUnlock())
 			EndIF 
 
         EndIF 
@@ -178,16 +206,15 @@ Static Function xProcessa()
     FT_FUSE()
 Return
 
-//====================================================================================================================\
-/*/{Protheus.doc}fPrxNumZZX
-  ====================================================================================================================
-	@description
-	Retorna o próximo número para a tabela ZZX
-/*/
-//===================================================================================================================\
+/*---------------------------------------------------------------------*
+ | Func:  fPrxNumZZX                                                   |
+ | Desc:  Retorna o próximo número para a tabela ZZX                   |
+ | Obs.:  /                                                            |
+ *---------------------------------------------------------------------*/
+
 Static Function fPrxNumZZX()
 
-	Local cRet := StrZero(0,10)
+	Local cRet := StrZero(0,FWTamSX3("ZZX_IMPORT")[1])
 	Local cQry := ''
 	Local cAli := GetNextAlias()
 
