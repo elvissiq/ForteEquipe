@@ -407,23 +407,26 @@ Static Function fnProcess()
 				
 				fnIncTit() //Inclui o Titulo
 			Else
-				IF Empty(SE1->E1_SALDO)
-					DBGoTo((_cAlias)->R_E_C_N_O_)
-					RecLock("ZZX",.F.)
-						ZZX_USRPRO := cUserName
-						ZZX_DTPROS := dDataBase
-						ZZX_ERRBX  := ""
-						ZZX_STATUS := 'OK'
-					ZZX->(MsUnlock())	
-				ElseIF SE1->E1_SALDO < SE1->E1_VALOR
-					DBGoTo((_cAlias)->R_E_C_N_O_)
-					RecLock("ZZX",.F.)
-						ZZX_USRPRO := cUserName
-						ZZX_DTPROS := dDataBase
-						ZZX_ERRBX  := ""
-						ZZX_STATUS := 'BP'
-					ZZX->(MsUnlock())
-				EndIF 				
+				Do Case
+					Case Empty(SE1->E1_SALDO)
+							DBGoTo((_cAlias)->R_E_C_N_O_)
+							RecLock("ZZX",.F.)
+								ZZX_USRPRO := cUserName
+								ZZX_DTPROS := dDataBase
+								ZZX_ERRBX  := ""
+								ZZX_STATUS := 'OK'
+							ZZX->(MsUnlock())
+					Case SE1->E1_SALDO < SE1->E1_VALOR
+							DBGoTo((_cAlias)->R_E_C_N_O_)
+							RecLock("ZZX",.F.)
+								ZZX_USRPRO := cUserName
+								ZZX_DTPROS := dDataBase
+								ZZX_ERRBX  := ""
+								ZZX_STATUS := 'BP'
+							ZZX->(MsUnlock())
+					Case  MV_PAR09 == 1
+						fnBXTit() //Baixa o Titulo
+				End Case				
 			EndIF 
 		ElseIF MV_PAR09 == 3
 			fnBXTit() //Baixa o Titulo
