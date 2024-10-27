@@ -107,9 +107,9 @@ Static Function fnImport()
 	Local cNumImp   := fPrxNumZZX()
 	Local cTimeHr   := FWTimeStamp(2)
 	Local cHelp     := ""
-	Local nDia      := 0
-	Local nMes      := 0
-	Local nAno      := 0
+	//Local nDia      := 0
+	//Local nMes      := 0
+	//Local nAno      := 0
 
 	If !File(cArq)
 		FwAlertError("Não foi possível importar o arquivo, por favor tente novamente.","Importar Arquivo")
@@ -145,6 +145,7 @@ Static Function fnImport()
 				aRegistro[13] := StrTran(aRegistro[13],",",".")
 				aRegistro[13] := Val(aRegistro[13])
 
+				/*
 				nDia := Val(IIF(At("/",aRegistro[10])+1 == RAt("/",aRegistro[10])-1, SubStr(aRegistro[10],At("/",aRegistro[10])+1,1), SubStr(aRegistro[10],At("/",aRegistro[10])+1,2)))
 				nMes := Val(SubStr(aRegistro[10],1,At("/",aRegistro[10])-1))
 				nAno := Val(SubStr(aRegistro[10],Rat("/",aRegistro[10])+1))
@@ -164,7 +165,8 @@ Static Function fnImport()
 				nMes := Val(SubStr(aRegistro[15],1,At("/",aRegistro[15])-1))
 				nAno := Val(SubStr(aRegistro[15],Rat("/",aRegistro[15])+1))
 				aRegistro[15] := CToD(StrZero(nDia,2)+"/"+StrZero(nMes,2)+"/"+StrZero(nAno,4))
-				
+				*/
+
 				If SA1->(MSSeek(xFilial("SA1") + aRegistro[07] ))
 					If AllTrim(aRegistro[08]) <> SA1->A1_LOJA
 						aRegistro[09] := aRegistro[08]
@@ -189,12 +191,12 @@ Static Function fnImport()
 						ZZX->ZZX_CLIENT := Pad(aRegistro[07],FWTamSX3("ZZX_CLIENT")[1])
 						ZZX->ZZX_LOJA   := Pad(aRegistro[08],FWTamSX3("ZZX_LOJA")[1]  )
 						ZZX->ZZX_LJOLD  := Pad(aRegistro[09],FWTamSX3("ZZX_LJOLD")[1] )
-						ZZX->ZZX_EMISSA := aRegistro[10]
-						ZZX->ZZX_VENCTO := aRegistro[11]
-						ZZX->ZZX_VENCRE := aRegistro[12]
+						ZZX->ZZX_EMISSA := CToD(aRegistro[10])
+						ZZX->ZZX_VENCTO := CToD(aRegistro[11])
+						ZZX->ZZX_VENCRE := CToD(aRegistro[12])
 						ZZX->ZZX_VALOR  := aRegistro[13]
 						ZZX->ZZX_VEND1  := Pad(aRegistro[14],FWTamSX3("ZZX_VEND1")[1] )
-						ZZX->ZZX_BAIXA  := aRegistro[15]
+						ZZX->ZZX_BAIXA  := CToD(aRegistro[15])
 						ZZX->ZZX_CCUSTO := Pad(aRegistro[16],FWTamSX3("ZZX_CCUSTO")[1])
 						ZZX->ZZX_NUMBCO := Pad(aRegistro[17],FWTamSX3("ZZX_NUMBCO")[1])
 						ZZX->ZZX_NSUTEF := Pad(aRegistro[18],FWTamSX3("ZZX_NSUTEF")[1])
