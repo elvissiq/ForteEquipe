@@ -8,7 +8,7 @@
 /*/{PROTHEUS.DOC} FFIN003
 FUNÇÃO FFIN003- Titulos Liquidados (Legado)
 @VERSION PROTHEUS 12
-@SINCE 15/10/2024
+@SINCE 27/10/2024
 /*/
 User Function FFIN003()
 	Local aArea := FWGetArea()
@@ -24,11 +24,12 @@ User Function FFIN003()
 	//oBrowse:SetFixedBrowse(.T.)
 
 	oBrowse:AddLegend("ZZX_STATUS == '  '", 'BR_BRANCO'  , 'Apto a processar')
+	oBrowse:AddLegend("ZZX_STATUS == 'OK'", 'BR_VERDE'   , 'Titulo Incluido e Baixado')
 	oBrowse:AddLegend("ZZX_STATUS == 'EI'", 'BR_VERMELHO', 'Erro na Inclusao do Titulo')
 	oBrowse:AddLegend("ZZX_STATUS == 'EB'", 'BR_LARANJA' , 'Erro na Baixa do Titulo')
 	oBrowse:AddLegend("ZZX_STATUS == 'TI'", 'BR_AZUL'    , 'Titulo Incluido')
 	oBrowse:AddLegend("ZZX_STATUS == 'BP'", 'BR_CINZA'   , 'Titulo Baixado Parcial')
-	oBrowse:AddLegend("ZZX_STATUS == 'OK'", 'BR_VERDE'   , 'Titulo Incluido e Baixado')
+	oBrowse:AddLegend("ZZX_STATUS == 'DU'", 'BR_PRETO'   , 'Titulo Duplicado')
 
 	oBrowse:Activate()
 
@@ -399,36 +400,44 @@ Static Function fnProcess()
         IncProc("Registro " + cValToChar(nAtual) + " de " + cValToChar(nFim) + "...")
 
 		IF MV_PAR09 == 1 .Or. MV_PAR09 == 2
-			IF ! SE1->(MSSeek( Pad((_cAlias)->ZZX_FILMOV, FWTamSX3("E1_FILIAL")[01]) + ;
-							   Pad((_cAlias)->ZZX_CLIENT, FWTamSX3("E1_CLIENTE")[01]) + ;
-							   Pad((_cAlias)->ZZX_LOJA  , FWTamSX3("E1_LOJA")[01]) + ;
-							   Pad((_cAlias)->ZZX_PREFIX, FWTamSX3("E1_PREFIXO")[01]) + ;
-							   Pad((_cAlias)->ZZX_NUM   , FWTamSX3("E1_NUM")[01]) + ;
-							   Pad((_cAlias)->ZZX_PARCEL, FWTamSX3("E1_PARCELA")[01]) + ;
-							   Pad((_cAlias)->ZZX_TIPO  , FWTamSX3("E1_TIPO")[01]) ))
+			IF ! (SE1->(MSSeek( Pad((_cAlias)->ZZX_FILMOV, FWTamSX3("E1_FILIAL")[01]) + ;
+							   	Pad((_cAlias)->ZZX_PREFIX, FWTamSX3("E1_PREFIXO")[01]) + ;
+							   	Pad((_cAlias)->ZZX_NUM   , FWTamSX3("E1_NUM")[01]) + ;
+							   	Pad((_cAlias)->ZZX_PARCEL, FWTamSX3("E1_PARCELA")[01]) + ;
+							   	Pad((_cAlias)->ZZX_TIPO  , FWTamSX3("E1_TIPO")[01]) )) )
 				
 				fnIncTit() //Inclui o Titulo
+				
+			ElseIF (SE1->E1_CLIENTE + SE1->E1_LOJA) <> ((_cAlias)->ZZX_CLIENT + (_cAlias)->ZZX_LOJA)
+					
+				DBGoTo((_cAlias)->R_E_C_N_O_)
+				RecLock("ZZX",.F.)
+					ZZX_USRPRO := cUserName
+					ZZX_DTPROS := dDataBase
+					ZZX_ERRINC := "Titulo ja existe para outro cliente na SE1"
+					ZZX_STATUS := 'DU'
+				ZZX->(MsUnlock())
+				
 			Else
-				Do Case
-					Case Empty(SE1->E1_SALDO)
-							DBGoTo((_cAlias)->R_E_C_N_O_)
-							RecLock("ZZX",.F.)
-								ZZX_USRPRO := cUserName
-								ZZX_DTPROS := dDataBase
-								ZZX_ERRBX  := ""
-								ZZX_STATUS := 'OK'
-							ZZX->(MsUnlock())
-					Case SE1->E1_SALDO < SE1->E1_VALOR
-							DBGoTo((_cAlias)->R_E_C_N_O_)
-							RecLock("ZZX",.F.)
-								ZZX_USRPRO := cUserName
-								ZZX_DTPROS := dDataBase
-								ZZX_ERRBX  := ""
-								ZZX_STATUS := 'BP'
-							ZZX->(MsUnlock())
-					Case  MV_PAR09 == 1
-						fnBXTit() //Baixa o Titulo
-				End Case				
+				IF Empty(SE1->E1_SALDO)
+					DBGoTo((_cAlias)->R_E_C_N_O_)
+					RecLock("ZZX",.F.)
+						ZZX_USRPRO := cUserName
+						ZZX_DTPROS := dDataBase
+						ZZX_ERRBX  := ""
+						ZZX_STATUS := 'OK'
+					ZZX->(MsUnlock())
+				ElseIF SE1->E1_SALDO < SE1->E1_VALOR
+					DBGoTo((_cAlias)->R_E_C_N_O_)
+					RecLock("ZZX",.F.)
+						ZZX_USRPRO := cUserName
+						ZZX_DTPROS := dDataBase
+						ZZX_ERRBX  := ""
+						ZZX_STATUS := 'BP'
+					ZZX->(MsUnlock())
+				ElseIF  MV_PAR09 == 1
+					fnBXTit() //Baixa o Titulo
+				EndIF
 			EndIF 
 		ElseIF MV_PAR09 == 3
 			fnBXTit() //Baixa o Titulo
