@@ -392,7 +392,6 @@ Static Function fnProcess()
 	(_cAlias)->(DbGoTop())
 
 	DBSelectArea("SE1")
-	SE1->(dbSetOrder(2))
 
 	While (_cAlias)->(!Eof())
 
