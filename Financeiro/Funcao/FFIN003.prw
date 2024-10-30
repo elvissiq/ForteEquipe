@@ -8,7 +8,7 @@
 /*/{PROTHEUS.DOC} FFIN003
 FUNÇÃO FFIN003- Titulos Liquidados (Legado)
 @VERSION PROTHEUS 12
-@SINCE 27/10/2024
+@SINCE 29/10/2024
 /*/
 User Function FFIN003()
 	Local aArea := FWGetArea()
@@ -335,6 +335,8 @@ Static Function fnProcess()
 	Local nSelect  := 1
 	Local cLoteDe  := Space(FWTamSX3("ZZX_IMPORT")[01])
 	Local cLoteAt  := Space(FWTamSX3("ZZX_IMPORT")[01])
+	Local dDataDe  := CToD("")
+	Local dDataAt  := CToD("")
 	Local cPrefDe  := Space(FWTamSX3("ZZX_PREFIX")[01])
 	Local cPrefAt  := Space(FWTamSX3("ZZX_PREFIX")[01])
 	Local cNumDe   := Space(FWTamSX3("ZZX_IMPORT")[01])
@@ -356,7 +358,9 @@ Static Function fnProcess()
 	aAdd(aPergs, {1, "Cliente de :", cClieDe,  "", ".T.", "SA1", ".T.", 80,  .F.})
 	aAdd(aPergs, {1, "Cliente ate:", cClieAt,  "", ".T.", "SA1", ".T.", 80,  .T.})
 	aAdd(aPergs, {2, "Processar:", nSelect, aSelOpc, 80, ".T.", .T.})
-
+	aAdd(aPergs, {1, "Emissao de :", dDataDe,  "", ".T.", "", ".T.", 80,  .F.})
+	aAdd(aPergs, {1, "Emissao ate:", dDataAt,  "", ".T.", "", ".T.", 80,  .F.})
+	
    	If !ParamBox(aPergs ,"Informe os dados")
     	FWAlertWarning("Processo cancelado pelo usuário.","HELPFINF003")
 		Return		
@@ -380,7 +384,10 @@ Static Function fnProcess()
 			cQry += " AND ZZX_STATUS IN ('','EI') "
 		Case  MV_PAR09 == 3
 			cQry += " AND ZZX_STATUS IN ('TI','EB') "
-	End Case 
+	End Case
+	If !Empty(MV_PAR10) .And. !Empty(MV_PAR11)
+	cQry += " 	AND ZZX_EMISSA BETWEEN '" + DToS(MV_PAR10) + "' AND '" + DToS(MV_PAR11) + "' "
+	EndIF 
 	cQry := ChangeQuery(cQry)
 	If Select(_cAlias) <> 0
 		(_cAlias)->(DbCloseArea())
