@@ -45,11 +45,12 @@ Return
 Static Function MenuDef()
 	Local aRot := {}
 	
-	ADD OPTION aRot TITLE 'Importar'   ACTION 'U_IMPFIN003'   	OPERATION 3 ACCESS 0
-	ADD OPTION aRot TITLE 'Processar'  ACTION 'U_PROCES003'   	OPERATION 4 ACCESS 0
-	ADD OPTION aRot TITLE 'Visualizar' ACTION 'VIEWDEF.FFIN003' OPERATION 2 ACCESS 0
-	ADD OPTION aRot TITLE 'Alterar'    ACTION 'VIEWDEF.FFIN003' OPERATION 4 ACCESS 0
-	ADD OPTION aRot TITLE 'Excluir'    ACTION 'U_EXCFIN003'   	OPERATION 5 ACCESS 0
+	ADD OPTION aRot TITLE 'Importar'    ACTION 'U_IMPFIN003'   	 OPERATION 3 ACCESS 0
+	ADD OPTION aRot TITLE 'Processar'   ACTION 'U_PROCES003'   	 OPERATION 4 ACCESS 0
+	ADD OPTION aRot TITLE 'Visualizar'  ACTION 'VIEWDEF.FFIN003' OPERATION 2 ACCESS 0
+	ADD OPTION aRot TITLE 'Alterar'     ACTION 'VIEWDEF.FFIN003' OPERATION 4 ACCESS 0
+	ADD OPTION aRot TITLE 'Excluir'     ACTION 'U_EXCFIN003'   	 OPERATION 5 ACCESS 0
+	ADD OPTION aRot TITLE 'Ajusta Loja' ACTION 'U_AJUSTACLI'   	 OPERATION 4 ACCESS 0
 
 Return aRot
 
@@ -618,5 +619,60 @@ Static Function fnBXTit()
 
 	dDatabase := dDataBkp
 	cFilAnt := cFilAux
+
+Return
+
+/*---------------------------------------------------------------------*
+ | Func: AjustaCli                                                     |
+ | Desc: Realiza ajuste no campo ZZX_LOJA conforme do código do cliente|
+ | Obs.: /                                                             |
+ *---------------------------------------------------------------------*/
+
+User Function AjustaCli()
+	Processa({|| fnAjustCli()}, "Processando registros...")
+Return 
+
+Static Function fnAjustCli()
+
+	Local cQry   := ''
+	Local cAli   := GetNextAlias()
+	Local nAtual := 0
+	Local nFim   := 0
+
+	cQry := " SELECT ZZX_CLIENT, R_E_C_N_O_ "
+	cQry += " FROM " + RetSqlTab('ZZX')
+	cQry += " WHERE D_E_L_E_T_ <> '*' "
+	cQry += " 	AND ZZX_STATUS = 'EI' "
+	cQry += " 	AND ZZX_ERRINC LIKE ('%existe registro relacionado a chave informada no alias SA1%') "
+	cQry := ChangeQuery(cQry)
+	If Select(cAli) <> 0
+		(cAli)->(DbCloseArea())
+	EndIf
+	dbUseArea(.T.,'TOPCONN', TCGenQry(,,cQry),cAli, .F., .T.)
+	Count To nFim
+	ProcRegua(nFim)
+
+	(cAli)->(DbGoTop())
+
+	DBSelectArea("SA1")
+
+	While (cAli)->(!Eof())
+		
+		nAtual++
+        IncProc("Registro " + cValToChar(nAtual) + " de " + cValToChar(nFim) + "...")
+		
+		IF SA1->(MSSeek(xFilial("SA1") + (cAli)->ZZX_CLIENT))
+			ZZX->(DBGoTo((cAli)->R_E_C_N_O_))
+			RecLock("ZZX",.F.)
+				ZZX->ZZX_LOJA   := SA1->A1_LOJA
+				ZZX->ZZX_ERRINC := ''
+				ZZX->ZZX_STATUS := ''
+			ZZX->(MsUnlock())
+		EndIF 
+	(cAli)->(DbSkip())
+	End
+	If Select(cAli) <> 0
+		(cAli)->(DbCloseArea())
+	EndIf
 
 Return
