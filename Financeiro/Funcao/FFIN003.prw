@@ -30,6 +30,7 @@ User Function FFIN003()
 	oBrowse:AddLegend("ZZX_STATUS == 'TI'", 'BR_AZUL'    , 'Titulo Incluido')
 	oBrowse:AddLegend("ZZX_STATUS == 'BP'", 'BR_CINZA'   , 'Titulo Baixado Parcial')
 	oBrowse:AddLegend("ZZX_STATUS == 'DU'", 'BR_PRETO'   , 'Titulo Duplicado')
+	oBrowse:AddLegend("ZZX_STATUS == 'EE'", 'BR_MARROM'  , 'Erro na Exclusão')
 
 	oBrowse:Activate()
 
@@ -286,53 +287,21 @@ Static Function fnGrvLog(aRegistro,cHelp,cLinha,cTimeHr,cTpMov)
 Return
 
 /*---------------------------------------------------------------------*
- | Func:  EXCFIN003()                                                  |
- | Desc:  Exclui registros da tabela ZZX                               |
- | Obs.:  /                                                            |
- *---------------------------------------------------------------------*/
-
-User Function EXCFIN003()
-	Local oPanel   := Nil
-	Local oDialog  := Nil
-	Local cLote    := Space(FWTamSX3("ZZX_IMPORT")[1])
-
-	IF FWAlertYesNo("Deseja realizar exclusão em LOTE ?","Exclusão de Registros")
-		oDialog := FWDialogModal():New()
-		oDialog:SetBackground( .T. ) 
-		oDialog:SetTitle( 'Exclusão de Registros em LOTE' )
-		oDialog:SetSize( 100, 150 )
-		oDialog:EnableFormBar( .T. )
-		oDialog:SetCloseButton( .T. )
-		oDialog:SetEscClose( .T. )
-		oDialog:CreateDialog()
-		oDialog:CreateFormBar()
-		oDialog:addCloseButton(Nil, "Fechar")
-		oDialog:addCloseButton(Nil, "Confirmar")
-		oPanel := oDialog:GetPanelMain()
-		oTSay  := TSay():New(10,5,{|| "LOTE: "},oPanel,,,,,,.T.,,,50,70,,,,,,.T.)
-        oCombo := TComboBox():New(29,28,{|u|iif(PCount()>0,cLote:=u,cLote)},aTab,100,20,oDlg,,{||},,,,.T.,,,,,,,,,'cLote')
-		oDialog:Activate()
-	Else
-		FWExecView("Exclusão","FFIN003",5,,{|| .T.},,,)
-	EndIF 
-
-Return
-
-/*---------------------------------------------------------------------*
  | Func:  PROCES003()                                                  |
  | Desc:  Realiza a inclusão e baixa dos títulos registrados na ZZX.   |
  | Obs.:  /                                                            |
  *---------------------------------------------------------------------*/
 
 User Function PROCES003()
-	Processa({|| fnProcess()}, "Processando registros...")
+	Local nOpc := 3
+	Processa({|nOpc| fnProcess(nOpc)}, "Processando registros...")
 Return 
 
-Static Function fnProcess()
+Static Function fnProcess(pOpc)
 	Local aArea    := FWGetArea()
 	Local aAreaSE1 := SE1->(FWGetArea())
 	Local aPergs   := {}
-	Local aSelOpc  := {"1=Inclusao e Baixa", "2=Apenas Inclusao", "3=Apenas Baixa"}
+	Local aSelOpc  := {"1=Inclusao e Baixa", "2=Apenas Inclusao", "3=Apenas Baixa","5=Excluir"}
 	Local nSelect  := 1
 	Local cLoteDe  := Space(FWTamSX3("ZZX_IMPORT")[01])
 	Local cLoteAt  := Space(FWTamSX3("ZZX_IMPORT")[01])
@@ -347,6 +316,7 @@ Static Function fnProcess()
 	Local cQry 	   := ''
 	Local nAtual   := 0
 	Local nFim     := 0
+	Local nOpc     := pOpc
 
 	Private _cAlias := GetNextAlias()
 
@@ -385,6 +355,8 @@ Static Function fnProcess()
 			cQry += " AND ZZX_STATUS IN ('','EI') "
 		Case  MV_PAR09 == 3
 			cQry += " AND ZZX_STATUS IN ('TI','EB') "
+		Case  MV_PAR09 == 5
+			cQry += " AND ZZX_STATUS IN ('TI','OK','BP') "
 	End Case
 	If !Empty(MV_PAR10) .And. !Empty(MV_PAR11)
 	cQry += " 	AND ZZX_EMISSA BETWEEN '" + DToS(MV_PAR10) + "' AND '" + DToS(MV_PAR11) + "' "
@@ -413,7 +385,7 @@ Static Function fnProcess()
 							   	Pad((_cAlias)->ZZX_PARCEL, FWTamSX3("E1_PARCELA")[01]) + ;
 							   	Pad((_cAlias)->ZZX_TIPO  , FWTamSX3("E1_TIPO")[01]) )) )
 				
-				fnIncTit() //Inclui o Titulo
+				fnIncTit(nOpc) //Inclui o Titulo
 				
 			ElseIF (SE1->E1_CLIENTE + SE1->E1_LOJA) <> ((_cAlias)->ZZX_CLIENT + (_cAlias)->ZZX_LOJA)
 					
@@ -443,11 +415,11 @@ Static Function fnProcess()
 						ZZX_STATUS := 'BP'
 					ZZX->(MsUnlock())
 				ElseIF  MV_PAR09 == 1
-					fnBXTit() //Baixa o Titulo
+					fnBXTit(nOpc) //Baixa o Titulo
 				EndIF
 			EndIF 
-		ElseIF MV_PAR09 == 3
-			fnBXTit() //Baixa o Titulo
+		ElseIF MV_PAR09 == 3 .Or. MV_PAR09 == 5
+			fnBXTit(nOpc) //Baixa o Titulo
 		EndIF 
 	
 	(_cAlias)->(DbSkip())
@@ -467,8 +439,8 @@ Return
  | Obs.:  /                                                                 |
  *-------------------------------------------------------------------------*/
 
-Static Function fnIncTit()
-	Local nOpc := 3
+Static Function fnIncTit(pOpc)
+	Local nOpc := pOpc
 	Local nCount := 0
 	Local aTitInc := {}
 	Local aErroAuto := {}
@@ -514,7 +486,7 @@ Static Function fnIncTit()
 				ZZX_USRPRO := cUserName
 				ZZX_DTPROS := dDataBase
 				ZZX_ERRINC := cLogErro
-				ZZX_STATUS := 'EI'
+				ZZX_STATUS := IIF(nOpc == 3,'EI','EE')
 			ZZX->(MsUnlock())
 		Else
 			DBSelectArea('ZZX')
@@ -523,10 +495,10 @@ Static Function fnIncTit()
 				ZZX_USRPRO := cUserName
 				ZZX_DTPROS := dDataBase
 				ZZX_ERRINC := ""
-				ZZX_STATUS := 'TI'
+				ZZX_STATUS := IIF(nOpc == 3,'TI','  ')
 			ZZX->(MsUnlock())
 			IF MV_PAR09 == 1
-				fnBXTit() //Baixa o Titulo
+				fnBXTit(3) //Baixa o Titulo
 			EndIF 
 		EndIf
 	END TRANSACTION
@@ -541,8 +513,8 @@ Return
  | Obs.:  /                                                                 |
  *-------------------------------------------------------------------------*/
 
-Static Function fnBXTit()
-	Local nOpc := 3
+Static Function fnBXTit(pOpc)
+	Local nOpc := pOpc
 	Local nCount := 0
 	Local aBXTit := {}
 	Local aErroAuto := {}
@@ -575,7 +547,7 @@ Static Function fnBXTit()
 	AAdd(aBXTit, {"AUTHIST"     , cHistBx												, Nil })
 	AAdd(aBXTit, {"AUTVLRPG"    , (_cAlias)->ZZX_VALOR									, Nil })
 
-	AcessaPerg("FINA070", .F.)
+	AcessaPerg("FINA070",.F.)
 
 	BEGIN TRANSACTION
 		If nOpc == 5
@@ -598,11 +570,13 @@ Static Function fnBXTit()
 				ZZX_USRPRO := cUserName
 				ZZX_DTPROS := dDataBkp
 				ZZX_ERRBX  := cLogErro
-				ZZX_STATUS := 'EB'
+				ZZX_STATUS := IIF(nOpc == 3,'EB','EE')
 			ZZX->(MsUnlock())
 		Else
-			IF Empty(SE1->E1_SALDO)
-				cStatusBx := "OK"	
+			IF nOpc == 5
+				fnIncTit(nOpc) //Exclui o Titulo
+			ElseIF Empty(SE1->E1_SALDO)
+				cStatusBx := "OK"
 			ElseIF SE1->E1_SALDO < SE1->E1_VALOR
 				cStatusBx := 'BP'
 			EndIF
@@ -619,6 +593,23 @@ Static Function fnBXTit()
 
 	dDatabase := dDataBkp
 	cFilAnt := cFilAux
+
+Return
+
+/*---------------------------------------------------------------------*
+ | Func:  EXCFIN003()                                                  |
+ | Desc:  Exclui registros da tabela ZZX                               |
+ | Obs.:  /                                                            |
+ *---------------------------------------------------------------------*/
+
+User Function EXCFIN003()
+	Local nOpc := 5
+
+	IF FWAlertYesNo("Deseja realizar exclusão em LOTE ?","Exclusão de Registros")	
+		Processa({|nOpc| fnProcess(nOpc)}, "Processando registros...")
+	Else
+		FWExecView("Exclusão","FFIN003",5,,{|| .T.},,,)
+	EndIF 
 
 Return
 
