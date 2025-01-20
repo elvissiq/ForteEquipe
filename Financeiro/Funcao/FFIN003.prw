@@ -514,16 +514,17 @@ Return
  *-------------------------------------------------------------------------*/
 
 Static Function fnBXTit(pOpc)
-	Local nOpc := pOpc
-	Local nCount := 0
-	Local aBXTit := {}
+	Local nOpc      := pOpc
+	Local nCount    := 0
+	Local aBXTit    := {}
 	Local aErroAuto := {}
-	Local cLogErro := ""
-	Local cHistBx := IIF(Empty((_cAlias)->ZZX_HIST), cHistBx, (_cAlias)->ZZX_HIST + " - " + FWTimeStamp(2) )
-	Local cFilAux := cFilAnt
-	Local dDataBkp := dDatabase
-	Local dDtBaixa := SToD((_cAlias)->ZZX_BAIXA)
+	Local cLogErro  := ""
+	Local cHistBx   := IIF(Empty((_cAlias)->ZZX_HIST), cHistBx, (_cAlias)->ZZX_HIST + " - " + FWTimeStamp(2) )
+	Local cFilAux   := cFilAnt
+	Local dDataBkp  := dDatabase
+	Local dDtBaixa  := SToD((_cAlias)->ZZX_BAIXA)
 	Local cStatusBx := ""
+	Local nSeqBx    := 0
 
 	Private lMsErroAuto := .F.
 	Private lAutoErrNoFile := .T.
@@ -549,9 +550,19 @@ Static Function fnBXTit(pOpc)
 
 	AcessaPerg("FINA070",.F.)
 
+	IF ZZX->(FieldPos(ZZX_SEQBX)) > 0 
+		If (_cAlias)->ZZX_SEQBX > 0
+			nSeqBx := (_cAlias)->ZZX_SEQBX
+		EndIF 
+	EndIF 
+
 	BEGIN TRANSACTION
 		If nOpc == 5
+			If nSeqBx > 0
 			MsExecauto({|x,y,z,v| FINA070(x,y,z,v)}, aBXTit, nOpc, .F., nSeqBx)
+			Else
+			MsExecauto({|x,y,z,v| FINA070(x,y,z,v)}, aBXTit, nOpc)
+			EndIF 
 		Else
 			MsExecAuto({|x, y| FINA070(x, y)}, aBXTit, nOpc)
 		EndIf
