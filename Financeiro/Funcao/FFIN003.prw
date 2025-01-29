@@ -23,14 +23,15 @@ User Function FFIN003()
 	//oBrowse:DisableDetails()
 	//oBrowse:SetFixedBrowse(.T.)
 
-	oBrowse:AddLegend("ZZX_STATUS == '  '", 'BR_BRANCO'  , 'Apto a processar')
-	oBrowse:AddLegend("ZZX_STATUS == 'OK'", 'BR_VERDE'   , 'Titulo Incluido e Baixado')
-	oBrowse:AddLegend("ZZX_STATUS == 'EI'", 'BR_VERMELHO', 'Erro na Inclusao do Titulo')
-	oBrowse:AddLegend("ZZX_STATUS == 'EB'", 'BR_LARANJA' , 'Erro na Baixa do Titulo')
-	oBrowse:AddLegend("ZZX_STATUS == 'TI'", 'BR_AZUL'    , 'Titulo Incluido')
-	oBrowse:AddLegend("ZZX_STATUS == 'BP'", 'BR_CINZA'   , 'Titulo Baixado Parcial')
-	oBrowse:AddLegend("ZZX_STATUS == 'DU'", 'BR_PRETO'   , 'Titulo Duplicado')
-	oBrowse:AddLegend("ZZX_STATUS == 'EE'", 'BR_MARROM'  , 'Erro na Exclusão')
+	oBrowse:AddLegend("ZZX_STATUS == '  '", 'BR_BRANCO'  		, 'Apto a processar')
+	oBrowse:AddLegend("ZZX_STATUS == 'OK'", 'BR_VERDE'   		, 'Titulo Incluido e Baixado')
+	oBrowse:AddLegend("ZZX_STATUS == 'EI'", 'BR_VERMELHO'		, 'Erro na Inclusao do Titulo')
+	oBrowse:AddLegend("ZZX_STATUS == 'EB'", 'BR_LARANJA' 		, 'Erro na Baixa do Titulo')
+	oBrowse:AddLegend("ZZX_STATUS == 'TI'", 'BR_VERDE_ESCURO'   , 'Titulo Incluido')
+	oBrowse:AddLegend("ZZX_STATUS == 'BP'", 'BR_AZUL'   		, 'Titulo Baixado Parcial')
+	oBrowse:AddLegend("ZZX_STATUS == 'DU'", 'BR_PRETO'   		, 'Titulo Duplicado')
+	oBrowse:AddLegend("ZZX_STATUS == 'ET'", 'BR_MARRON_OCEAN'  	, 'Erro na Exclusão do Titulo')
+	oBrowse:AddLegend("ZZX_STATUS == 'EE'", 'BR_MARROM'  		, 'Erro na Exclusão da Baixa')
 
 	oBrowse:Activate()
 
@@ -292,12 +293,12 @@ Return
  | Obs.:  /                                                            |
  *---------------------------------------------------------------------*/
 
-User Function PROCES003()
-	Local nOpc := 3
-	Processa({|nOpc| fnProcess(nOpc)}, "Processando registros...")
+User Function PROCES003(pOpc)
+	Local nOpc := IIF(!Empty(pOpc),pOpc,3)
+	Processa({|| fnProcess(nOpc)}, "Processando registros...")
 Return 
 
-Static Function fnProcess(pOpc)
+Static Function fnProcess(nOpc)
 	Local aArea    := FWGetArea()
 	Local aAreaSE1 := SE1->(FWGetArea())
 	Local aPergs   := {}
@@ -316,7 +317,8 @@ Static Function fnProcess(pOpc)
 	Local cQry 	   := ''
 	Local nAtual   := 0
 	Local nFim     := 0
-	Local nOpc     := pOpc
+	
+	Default nOpc   := 3
 
 	Private _cAlias := GetNextAlias()
 
@@ -356,7 +358,7 @@ Static Function fnProcess(pOpc)
 		Case  MV_PAR09 == 3
 			cQry += " AND ZZX_STATUS IN ('TI','EB') "
 		Case  MV_PAR09 == 5
-			cQry += " AND ZZX_STATUS IN ('TI','OK','BP') "
+			cQry += " AND ZZX_STATUS IN ('TI','OK','BP','EE','  ') "
 	End Case
 	If !Empty(MV_PAR10) .And. !Empty(MV_PAR11)
 	cQry += " 	AND ZZX_EMISSA BETWEEN '" + DToS(MV_PAR10) + "' AND '" + DToS(MV_PAR11) + "' "
@@ -418,8 +420,30 @@ Static Function fnProcess(pOpc)
 					fnBXTit(nOpc) //Baixa o Titulo
 				EndIF
 			EndIF 
-		ElseIF MV_PAR09 == 3 .Or. MV_PAR09 == 5
+		
+		ElseIF MV_PAR09 == 3 //Apenas Baixa
 			fnBXTit(nOpc) //Baixa o Titulo
+		
+		ElseIF MV_PAR09 == 5 //Exclusão
+			Do Case 
+				Case AllTrim((_cAlias)->ZZX_STATUS) $('OK/BP/EE')
+					fnBXTit(nOpc) //Exclui a Baixa o Titulo
+				Case AllTrim((_cAlias)->ZZX_STATUS) == 'TI'
+					fnBXTit(nOpc) //Exclui o título
+				Case Empty(AllTrim((_cAlias)->ZZX_STATUS))
+					IF ! (SE1->(MSSeek( Pad((_cAlias)->ZZX_FILMOV, FWTamSX3("E1_FILIAL")[01]) + ;
+							   	Pad((_cAlias)->ZZX_PREFIX, FWTamSX3("E1_PREFIXO")[01]) + ;
+							   	Pad((_cAlias)->ZZX_NUM   , FWTamSX3("E1_NUM")[01]) + ;
+							   	Pad((_cAlias)->ZZX_PARCEL, FWTamSX3("E1_PARCELA")[01]) + ;
+							   	Pad((_cAlias)->ZZX_TIPO  , FWTamSX3("E1_TIPO")[01]) )) )
+						
+						DBSelectArea('ZZX') //Exclui o registro da ZZX
+						DBGoTo((_cAlias)->R_E_C_N_O_)
+						RecLock("ZZX",.F.)
+							DBDelete()
+						ZZX->(MsUnlock())
+					EndIF
+			EndCase
 		EndIF 
 	
 	(_cAlias)->(DbSkip())
@@ -446,30 +470,33 @@ Static Function fnIncTit(pOpc)
 	Local aErroAuto := {}
 	Local cLogErro := ""
 	Local cFilAux := cFilAnt 
+	Local aBkpPar := NgSalvaMvPa()
 
 	Private lMsErroAuto := .F.
 	Private lAutoErrNoFile := .T.
 
 	cFilAnt := (_cAlias)->ZZX_FILMOV
 
-	aAdd(aTitInc,{ "E1_PREFIXO"  , (_cAlias)->ZZX_PREFIX  		, NIL })
-	aAdd(aTitInc,{ "E1_NUM"      , (_cAlias)->ZZX_NUM     		, NIL })
-	aAdd(aTitInc,{ "E1_PARCELA"  , (_cAlias)->ZZX_PARCEL  		, NIL })
-	aAdd(aTitInc,{ "E1_TIPO"     , (_cAlias)->ZZX_TIPO    		, NIL })
-	aAdd(aTitInc,{ "E1_NATUREZ"  , (_cAlias)->ZZX_NATURE  		, NIL })
-	aAdd(aTitInc,{ "E1_CLIENTE"  , (_cAlias)->ZZX_CLIENT  		, NIL })
-	aAdd(aTitInc,{ "E1_LOJA"     , (_cAlias)->ZZX_LOJA    		, NIL })
-	aAdd(aTitInc,{ "E1_CCUSTO"   , (_cAlias)->ZZX_CCUSTO  		, NIL })
-	aAdd(aTitInc,{ "E1_EMISSAO"  , SToD((_cAlias)->ZZX_EMISSA)  , NIL })
-	aAdd(aTitInc,{ "E1_VENCTO"   , SToD((_cAlias)->ZZX_VENCTO)  , NIL })
-	aAdd(aTitInc,{ "E1_VENCREA"  , SToD((_cAlias)->ZZX_VENCRE)  , NIL })
-	aAdd(aTitInc,{ "E1_VALOR"    , (_cAlias)->ZZX_VALOR  		, NIL })
-	aAdd(aTitInc,{ "E1_HIST"     , (_cAlias)->ZZX_HIST  		, NIL })
-	aAdd(aTitInc,{ "E1_NUMBCO"   , (_cAlias)->ZZX_NUMBCO  		, NIL })
-	aAdd(aTitInc,{ "E1_NSUTEF"   , (_cAlias)->ZZX_NSUTEF  		, NIL })
-	aAdd(aTitInc,{ "E1_CARTAU"   , (_cAlias)->ZZX_CARTAU  		, NIL })
+	aAdd(aTitInc,{ "E1_FILIAL"   , cFilAnt  												, NIL })
+	aAdd(aTitInc,{ "E1_PREFIXO"  , Pad((_cAlias)->ZZX_PREFIX,FWTamSX3("E1_PREFIXO")[01])	, NIL })
+	aAdd(aTitInc,{ "E1_NUM"      , Pad((_cAlias)->ZZX_NUM,FWTamSX3("E1_NUM")[01])   		, NIL })
+	aAdd(aTitInc,{ "E1_PARCELA"  , Pad((_cAlias)->ZZX_PARCEL,FWTamSX3("E1_PARCELA")[01])	, NIL })
+	aAdd(aTitInc,{ "E1_TIPO"     , Pad((_cAlias)->ZZX_TIPO,FWTamSX3("E1_TIPO")[01])  		, NIL })
+	aAdd(aTitInc,{ "E1_NATUREZ"  , (_cAlias)->ZZX_NATURE  									, NIL })
+	aAdd(aTitInc,{ "E1_CLIENTE"  , (_cAlias)->ZZX_CLIENT  									, NIL })
+	aAdd(aTitInc,{ "E1_LOJA"     , (_cAlias)->ZZX_LOJA    									, NIL })
+	aAdd(aTitInc,{ "E1_CCUSTO"   , (_cAlias)->ZZX_CCUSTO  									, NIL })
+	aAdd(aTitInc,{ "E1_EMISSAO"  , SToD((_cAlias)->ZZX_EMISSA)  							, NIL })
+	aAdd(aTitInc,{ "E1_VENCTO"   , SToD((_cAlias)->ZZX_VENCTO)  							, NIL })
+	aAdd(aTitInc,{ "E1_VENCREA"  , SToD((_cAlias)->ZZX_VENCRE)  							, NIL })
+	aAdd(aTitInc,{ "E1_VALOR"    , (_cAlias)->ZZX_VALOR  									, NIL })
+	aAdd(aTitInc,{ "E1_HIST"     , (_cAlias)->ZZX_HIST  									, NIL })
+	aAdd(aTitInc,{ "E1_NUMBCO"   , (_cAlias)->ZZX_NUMBCO  									, NIL })
+	aAdd(aTitInc,{ "E1_NSUTEF"   , (_cAlias)->ZZX_NSUTEF  									, NIL })
+	aAdd(aTitInc,{ "E1_CARTAU"   , (_cAlias)->ZZX_CARTAU  									, NIL })
 
 	BEGIN TRANSACTION
+		
 		MsExecAuto({|x,y| FINA040(x,y)}, aTitInc, nOpc)
 		
 		If lMsErroAuto
@@ -486,23 +513,31 @@ Static Function fnIncTit(pOpc)
 				ZZX_USRPRO := cUserName
 				ZZX_DTPROS := dDataBase
 				ZZX_ERRINC := cLogErro
-				ZZX_STATUS := IIF(nOpc == 3,'EI','EE')
+				ZZX_STATUS := IIF(nOpc == 3,'EI','ET')
 			ZZX->(MsUnlock())
+			DisarmTransaction()
 		Else
 			DBSelectArea('ZZX')
 			DBGoTo((_cAlias)->R_E_C_N_O_)
-			RecLock("ZZX",.F.)
-				ZZX_USRPRO := cUserName
-				ZZX_DTPROS := dDataBase
-				ZZX_ERRINC := ""
-				ZZX_STATUS := IIF(nOpc == 3,'TI','  ')
-			ZZX->(MsUnlock())
+			If nOpc == 5
+				RecLock("ZZX",.F.)
+					DBDelete()
+				ZZX->(MsUnlock())
+			Else
+				RecLock("ZZX",.F.)
+					ZZX_USRPRO := cUserName
+					ZZX_DTPROS := dDataBase
+					ZZX_ERRINC := ""
+					ZZX_STATUS := IIF(nOpc == 3,'TI','  ')
+				ZZX->(MsUnlock())
+			EndIF 
 			IF MV_PAR09 == 1
 				fnBXTit(3) //Baixa o Titulo
 			EndIF 
 		EndIf
 	END TRANSACTION
 
+	NgRetAuMvPa(aBkpPar)
 	cFilAnt := cFilAux
 
 Return
@@ -525,9 +560,14 @@ Static Function fnBXTit(pOpc)
 	Local dDtBaixa  := SToD((_cAlias)->ZZX_BAIXA)
 	Local cStatusBx := ""
 	Local nSeqBx    := 0
+	Local aBkpPar   := NgSalvaMvPa()
 
 	Private lMsErroAuto := .F.
 	Private lAutoErrNoFile := .T.
+
+	If nOpc == 5 //Muda de Cancelamento para Exclusão
+		nOpc := 6
+	EndIF 
 
 	cFilAnt := (_cAlias)->ZZX_FILMOV
 	dDatabase := dDtBaixa
@@ -550,23 +590,25 @@ Static Function fnBXTit(pOpc)
 
 	AcessaPerg("FINA070",.F.)
 
-	IF ZZX->(FieldPos(ZZX_SEQBX)) > 0 
-		If (_cAlias)->ZZX_SEQBX > 0
-			nSeqBx := (_cAlias)->ZZX_SEQBX
+	IF ZZX->(FieldPos(ZZX_SEQBX)) > 0
+		If !Empty((_cAlias)->ZZX_SEQBX)
+			nSeqBx := Val((_cAlias)->ZZX_SEQBX)
 		EndIF 
-	EndIF 
+	EndIF
 
 	BEGIN TRANSACTION
-		If nOpc == 5
+		If nOpc == 6
 			If nSeqBx > 0
-			MsExecauto({|x,y,z,v| FINA070(x,y,z,v)}, aBXTit, nOpc, .F., nSeqBx)
+				MsExecauto({|x,y,z,v| FINA070(x,y,z,v)}, aBXTit, nOpc, .F., nSeqBx)
 			Else
-			MsExecauto({|x,y,z,v| FINA070(x,y,z,v)}, aBXTit, nOpc)
+				MsExecauto({|x,y| FINA070(x,y)}, aBXTit, nOpc)
 			EndIF 
 		Else
 			MsExecAuto({|x, y| FINA070(x, y)}, aBXTit, nOpc)
 		EndIf
 		
+		NgRetAuMvPa(aBkpPar)
+
 		If lMsErroAuto
 			cLogErro := ""
 			aErroAuto := GetAutoGRLog()
@@ -583,22 +625,25 @@ Static Function fnBXTit(pOpc)
 				ZZX_ERRBX  := cLogErro
 				ZZX_STATUS := IIF(nOpc == 3,'EB','EE')
 			ZZX->(MsUnlock())
+			DisarmTransaction()
 		Else
-			IF nOpc == 5
-				fnIncTit(nOpc) //Exclui o Titulo
-			ElseIF Empty(SE1->E1_SALDO)
-				cStatusBx := "OK"
-			ElseIF SE1->E1_SALDO < SE1->E1_VALOR
-				cStatusBx := 'BP'
+			IF nOpc == 6 
+				fnIncTit(5) //Exclui o Titulo
+			Else
+				If Empty(SE1->E1_SALDO)
+					cStatusBx := "OK"
+				ElseIF SE1->E1_SALDO < SE1->E1_VALOR
+					cStatusBx := 'BP'
+				EndIF 
+				DBSelectArea('ZZX')
+				DBGoTo((_cAlias)->R_E_C_N_O_)
+				RecLock("ZZX",.F.)
+					ZZX_USRPRO := cUserName
+					ZZX_DTPROS := dDataBkp
+					ZZX_ERRBX  := ""
+					ZZX_STATUS := cStatusBx
+				ZZX->(MsUnlock())
 			EndIF
-			DBSelectArea('ZZX')
-			DBGoTo((_cAlias)->R_E_C_N_O_)
-			RecLock("ZZX",.F.)
-				ZZX_USRPRO := cUserName
-				ZZX_DTPROS := dDataBkp
-				ZZX_ERRBX  := ""
-				ZZX_STATUS := cStatusBx
-			ZZX->(MsUnlock())
 		EndIf
 	END TRANSACTION
 
@@ -617,7 +662,7 @@ User Function EXCFIN003()
 	Local nOpc := 5
 
 	IF FWAlertYesNo("Deseja realizar exclusão em LOTE ?","Exclusão de Registros")	
-		Processa({|nOpc| fnProcess(nOpc)}, "Processando registros...")
+		U_PROCES003(nOpc)
 	Else
 		FWExecView("Exclusão","FFIN003",5,,{|| .T.},,,)
 	EndIF 
