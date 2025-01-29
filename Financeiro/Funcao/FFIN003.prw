@@ -358,7 +358,7 @@ Static Function fnProcess(nOpc)
 		Case  MV_PAR09 == 3
 			cQry += " AND ZZX_STATUS IN ('TI','EB') "
 		Case  MV_PAR09 == 5
-			cQry += " AND ZZX_STATUS IN ('TI','OK','BP','EE','  ') "
+			cQry += " AND ZZX_STATUS IN ('TI','OK','BP','EE') "
 	End Case
 	If !Empty(MV_PAR10) .And. !Empty(MV_PAR11)
 	cQry += " 	AND ZZX_EMISSA BETWEEN '" + DToS(MV_PAR10) + "' AND '" + DToS(MV_PAR11) + "' "
