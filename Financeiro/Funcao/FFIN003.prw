@@ -142,8 +142,12 @@ Static Function fnImport()
         If !Empty(cLinha)
             aRegistro := {}
             aRegistro := Separa(cLinha,";",.T.)
-            
-			If Len(aRegistro) == 24
+
+				
+			If Len(aRegistro) < 24
+				cHelp := "Linha " + cValToChar(nAtu) + "- O registro possui menos colunas que o previsto"
+				fnGrvLog(aRegistro,cHelp,cLinha,cTimeHr,"IMPORTACAO")
+			Else
 
 				aRegistro[13] := StrTran(aRegistro[13],".","")
 				aRegistro[13] := StrTran(aRegistro[13],",",".")
@@ -177,7 +181,7 @@ Static Function fnImport()
 						aRegistro[08] := SA1->A1_LOJA
 					EndIF 
 				EndIF 
-
+				
 				IF ! ZZX->(MSSeek(xFilial("ZZX") + Pad(aRegistro[01],FWTamSX3("ZZX_FILMOV")[1]) + ;
 												   Pad(aRegistro[02],FWTamSX3("ZZX_PREFIX")[1]) + ;
 												   Pad(aRegistro[03],FWTamSX3("ZZX_NUM")[1]   ) + ;
@@ -221,10 +225,6 @@ Static Function fnImport()
 					cHelp := "Linha " + cValToChar(nAtu) + "- O titulo ja existe na tabela ZZX"
 					fnGrvLog(aRegistro,cHelp,cLinha,cTimeHr,"IMPORTACAO")
 				EndIF 
-				
-			Else
-				cHelp := "Linha " + cValToChar(nAtu) + "- O registro possui menos colunas que o previsto"
-				fnGrvLog(aRegistro,cHelp,cLinha,cTimeHr,"IMPORTACAO")
 			EndIF 
 
         EndIF 
