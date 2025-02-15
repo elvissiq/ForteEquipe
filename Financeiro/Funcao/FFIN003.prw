@@ -293,12 +293,11 @@ Return
  | Obs.:  /                                                            |
  *---------------------------------------------------------------------*/
 
-User Function PROCES003(pOpc)
-	Local nOpc := IIF(!Empty(pOpc),pOpc,3)
-	Processa({|| fnProcess(nOpc)}, "Processando registros...")
+User Function PROCES003()
+	Processa({|| fnProcess()}, "Processando registros...")
 Return 
 
-Static Function fnProcess(nOpc)
+Static Function fnProcess()
 	Local aArea    := FWGetArea()
 	Local aAreaSE1 := SE1->(FWGetArea())
 	Local aPergs   := {}
@@ -317,8 +316,7 @@ Static Function fnProcess(nOpc)
 	Local cQry 	   := ''
 	Local nAtual   := 0
 	Local nFim     := 0
-	
-	Default nOpc   := 3
+	Local nOpc     := 0
 
 	Private _cAlias := GetNextAlias()
 
@@ -340,7 +338,17 @@ Static Function fnProcess(nOpc)
 	EndIF
 
 	IF ValType(MV_PAR09) == "C"
-		MV_PAR09 := Val(MV_PAR09)
+		IF AllTrim(MV_PAR09) $ ("1/2/3")
+			nOpc := 3
+		ElseIF AllTrim(MV_PAR09) == "5"
+			nOpc := 5
+		EndIF 
+	Else
+		IF AllTrim(cValToChar(MV_PAR09)) $ ("1/2/3")
+			nOpc := 3
+		ElseIF MV_PAR09 == 5
+			nOpc := 5
+		EndIF	
 	EndIF
 
 	cQry := " SELECT * "
@@ -659,10 +667,9 @@ Return
  *---------------------------------------------------------------------*/
 
 User Function EXCFIN003()
-	Local nOpc := 5
 
 	IF FWAlertYesNo("Deseja realizar exclusão em LOTE ?","Exclusão de Registros")	
-		U_PROCES003(nOpc)
+		U_PROCES003()
 	Else
 		FWExecView("Exclusão","FFIN003",5,,{|| .T.},,,)
 	EndIF 
