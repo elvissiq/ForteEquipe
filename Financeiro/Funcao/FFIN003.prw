@@ -500,6 +500,7 @@ Static Function fnIncTit(pOpc)
 	aAdd(aTitInc,{ "E1_VALOR"    , (_cAlias)->ZZX_VALOR  									, NIL })
 	aAdd(aTitInc,{ "E1_HIST"     , (_cAlias)->ZZX_HIST  									, NIL })
 	aAdd(aTitInc,{ "E1_NUMBCO"   , (_cAlias)->ZZX_NUMBCO  									, NIL })
+	aAdd(aTitInc,{ "E1_VEND1"    , (_cAlias)->ZZX_VEND1  									, NIL })
 	aAdd(aTitInc,{ "E1_NSUTEF"   , (_cAlias)->ZZX_NSUTEF  									, NIL })
 	aAdd(aTitInc,{ "E1_CARTAU"   , (_cAlias)->ZZX_CARTAU  									, NIL })
 
